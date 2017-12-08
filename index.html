@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>QMarkdown</title>
+  <link rel="stylesheet" href="./src/css/editor.css"/>
+  <link rel="stylesheet" href="./src/css/writer.css"/>
+  <link rel="stylesheet" href="./src/css/highlight.css"/>
+  <link class="code-flavour" rel="stylesheet" href="./flavour/code/default.css"/>
+  <link class="flavour" rel="stylesheet" href="./flavour/default.css"/>
+  <link class="paper-size" rel="stylesheet" href="./paper/A4.css"/>
+  <link rel="stylesheet" href="./src/css/main.css"/>
+  <style class="paper-zoom">div.page{transform: scale(1, 1)}</style>
+</head>
+
+<body>
+  <div id="perm" style="width:100cm; height:0; float: left"></div>
+  <div class="row-fluid preview-mode active">
+    <div class="span6 main">
+      <textarea id="mdinput" class="text mousetrap" style="height: 785px;"></textarea>
+    </div>
+    <div id="mdpreview" class="span6 preview" style="max-height: 785px; min-height: 785px;">
+      <div class="page"></div>
+    </div>
+  </div>
+
+  <script src="./src/js/markdown.js"></script>
+  <script src="./src/js/jquery.min.js"></script>
+  <script src="./src/js/main.js"></script>
+  <script src="./src/js/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+</body>
+
+</html>

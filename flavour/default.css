@@ -1,0 +1,49 @@
+div.page {
+	font-family: "Times New Roman";
+}
+
+.center {
+	text-align: center;
+}
+
+p.title-large {
+	font-weight: bold;
+	font-size: 36px;
+	line-height: 40px;
+}
+
+p.title-small {
+	font-weight: bold;
+	font-size: 22px;
+	line-height: 24px;
+}
+
+p.title {
+	font-weight: bold;
+	font-size: 28px;
+	line-height: 32px;
+}
+
+p.brand {
+	font-weight: bold;
+	font-size: 64px;
+}
+
+p.brand-small {
+	font-weight: bold;
+	font-size: 40px;
+}
+
+p.brand, p.brand-small {
+	font-weight: bold;
+	line-height: 40px;
+}
+
+.text {
+	font-size: 16px;
+	line-height: 20px;
+}
+
+.bold {
+	font-weight: bold;
+}

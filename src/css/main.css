@@ -1,0 +1,9 @@
+div.page {
+	transform-origin: 0% 0%;
+	border-style: solid;
+	border-width: 1px;
+	border-color: #c6c6c6;
+	background-color: #ffffff;
+	padding: 0;
+	margin: 28px;
+}

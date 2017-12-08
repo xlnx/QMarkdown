@@ -14,8 +14,8 @@ marked.setOptions({
 });
 
 function md2html(md) {
-	var html = '<div class="page">' + marked(md) + '</div>';
-	html = html.replace(/<!--page-->/g, '</div><div class="page">');
+	var html = '<div class="page"><div class="padding"><div class="frame">' + marked(md) + '</div></div></div>';
+	html = html.replace(/<!--page-->/g, '</div></div></div><div class="page"><div class="padding"><div class="frame">');
 	return html;
 }
 
@@ -27,24 +27,28 @@ function renderFile() {
 	$("pre code").each(function () {
 		$(this).html("<ul><li>" + $(this).html().replace(/\n/g, "\n</li><li>") + "</li></ul>");
 		$(this).html($(this).html().replace(/<li><\/li><\/ul>/g, "</ul>"));
+	});
+	let destWidth = ($("#mdpreview").width() - 2 * parseInt($("div.page").css("marginLeft")));
+	let srcWidth = $("div.page").width(), srcHeight = 0;
+	let e = destWidth / srcWidth;
+	let margin = parseInt($("div.page").css("margin"));
+	$("div.page").each(function (i) {
+		$(this).css({"top": srcHeight + "px"});
+		srcHeight += e * (margin + $(this).height());
 	})
 }
 
 function previewResize() {
-	console.log($("div.page").width());
-	let destWidth = ($("#mdpreview").width() - 2.5 * parseInt($("div.page").css("marginLeft")));
+	let destWidth = ($("#mdpreview").width() - 2 * parseInt($("div.page").css("marginLeft")));
 	let srcWidth = $("div.page").width();
 	let e = destWidth / srcWidth;
-	$("head style.paper-zoom").get(0).innerHTML = "div.page{transform: scale(" + e + "," + e + ")}"
+	renderFile();
+	$("head style.paper-zoom").get(0).innerHTML = "div.page{transform: scale(" + e + "," + e + ")}";
 }
 
-$("#mdinput").get(0).addEventListener('input', function () {
-	renderFile();
-});
+$("#mdinput").get(0).addEventListener('input', renderFile);
 
-$("#mdinput").get(0).addEventListener('propertychange', function () {
-	renderFile();
-});
+$("#mdinput").get(0).addEventListener('propertychange', renderFile);
 
 $(function () {
 	$("#mdinput").focus();
@@ -60,5 +64,56 @@ ipcRenderer.on('changeDocumentFlavour', (event, arg) => {
 })
 
 ipcRenderer.on('changePaperSize', (event, arg) => {
-	$("head link.paper-size").get(0).setAttribute('href', arg);
+	let link = $("head link.paper-size").get(0);
+	link.setAttribute('href', arg);
+	styleOnload(link, previewResize);
 })
+
+function styleOnload(node, callback) {
+	// for IE6-9 and Opera
+	if (node.attachEvent) {
+		node.attachEvent('onload', callback);
+	}
+	// polling for Firefox, Chrome, Safari
+	else {
+		setTimeout(function() {
+			poll(node, callback);
+		}, 0.1); // for cache
+	}
+}
+
+function poll(node, callback) {
+	if (callback.isCalled) {
+		return;
+	}
+	var isLoaded = false;
+	if (/webkit/i.test(navigator.userAgent)) {//webkit
+		if (node['sheet']) {
+			isLoaded = true;
+		}
+	}
+	// for Firefox
+	else if (node['sheet']) {
+		try {
+			if (node['sheet'].cssRules) {
+				isLoaded = true;
+			}
+		} catch (ex) {
+			// NS_ERROR_DOM_SECURITY_ERR
+			if (ex.code === 1000) {
+				isLoaded = true;
+			}
+		}
+	}
+	if (isLoaded) {
+		// give time to render.
+		setTimeout(function() {
+			callback();
+		}, 1);
+	}
+	else {
+		setTimeout(function() {
+			poll(node, callback);
+		}, 1);
+	}
+}

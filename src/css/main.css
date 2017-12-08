@@ -1,3 +1,8 @@
+html, body, .preview-mode, .main, #mdpreview, #mdinput {
+	height: 100% !important;
+	position: relative;
+} 
+
 div.page {
 	transform-origin: 0% 0%;
 	border-style: solid;
@@ -6,4 +11,23 @@ div.page {
 	background-color: #ffffff;
 	padding: 0;
 	margin: 28px;
+	position: absolute;
+	left: 0px;
+	-webkit-transition: transform 0.3s, top 0.3s/*, width 0.3s, height 0.3s, left 0.3s*/;
+}
+
+div.padding {
+	overflow: hidden;
+	box-sizing: border-box;
+	height: 100%;
+	width: 100%;
+}
+
+div.frame {
+	overflow: hidden;
+	position: relative;
+	padding: 0;
+	margin: 0;
+	height: 100%;
+	width: 100%;
 }

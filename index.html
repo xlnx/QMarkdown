@@ -12,15 +12,16 @@
   <link class="paper-size" rel="stylesheet" href="./paper/A4.css"/>
   <link rel="stylesheet" href="./src/css/main.css"/>
   <style class="paper-zoom">div.page{transform: scale(1, 1)}</style>
+  <style class="paper-padding">div.page div.padding{padding-top:2.54cm;padding-bottom:2.54cm;padding-left:1.91cm;padding-right:1.91cm}</style>
 </head>
 
 <body>
   <div id="perm" style="width:100cm; height:0; float: left"></div>
   <div class="row-fluid preview-mode active">
     <div class="span6 main">
-      <textarea id="mdinput" class="text mousetrap" style="height: 785px;"></textarea>
+      <textarea id="mdinput" class="text mousetrap"></textarea>
     </div>
-    <div id="mdpreview" class="span6 preview" style="max-height: 785px; min-height: 785px;">
+    <div id="mdpreview" class="span6 preview">
       <div class="page"></div>
     </div>
   </div>

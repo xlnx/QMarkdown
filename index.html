@@ -4,14 +4,18 @@
 <head>
   <meta charset="UTF-8">
   <title>QMarkdown</title>
-  <link rel="stylesheet" href="./src/css/editor.css"/>
-  <link rel="stylesheet" href="./src/css/writer.css"/>
-  <link rel="stylesheet" href="./src/css/highlight.css"/>
+  <link class="native" rel="stylesheet" href="./src/css/editor.css"/>
+  <link class="auto-height native" rel="stylesheet" href="./src/css/autoheight.css"/>
+  
   <link class="code-flavour" rel="stylesheet" href="./flavour/code/default.css"/>
   <link class="flavour" rel="stylesheet" href="./flavour/default.css"/>
   <link class="paper-size" rel="stylesheet" href="./paper/A4.css"/>
+
   <link rel="stylesheet" href="./src/css/main.css"/>
-  <style class="paper-zoom">div.page{transform: scale(1, 1)}</style>
+  <link rel="stylesheet" href="./src/css/highlight.css"/>
+
+  <style class="paper-zoom native">div.page{transform: scale(1, 1)}</style>
+  
   <style class="paper-padding">div.page div.padding{padding-top:2.54cm;padding-bottom:2.54cm;padding-left:1.91cm;padding-right:1.91cm}</style>
 </head>
 
@@ -25,12 +29,13 @@
       <div class="page"></div>
     </div>
   </div>
+  <div class="scripts">
+    <script src="./src/js/jquery.min.js"></script>
+    <script src="./src/js/highlight.min.js"></script>
 
-  <script src="./src/js/markdown.js"></script>
-  <script src="./src/js/jquery.min.js"></script>
-  <script src="./src/js/main.js"></script>
-  <script src="./src/js/highlight.min.js"></script>
-  <script>hljs.initHighlightingOnLoad();</script>
+    <script class="native" src="./src/js/markdown.js"></script>
+    <script class="native" src="./src/js/main.js"></script>
+  </div>
 </body>
 
 </html>

@@ -1,14 +1,19 @@
+const debug = false
+
 const electron = require('electron')
 const fs = require('fs')
 
 const app = electron.app
 const Menu = electron.Menu
 const BrowserWindow = electron.BrowserWindow
+const dialog = electron.dialog
+const ipcMain = electron.ipcMain
+const shell = electron.shell
 
 const path = require('path')
 const url = require('url')
 
-let mainWindow, menu
+let mainWindow, menu, currentFile
 
 function changeCodeFlavour (item) {
   mainWindow.webContents.send('changeCodeFlavour', item.href)
@@ -24,50 +29,192 @@ function changePaperSize (item) {
 
 let template = [
 {
-  label: 'Edit',
+  label: '&File',
   submenu: [{
-    label: 'Undo',
+    label: '&Open',
+    accelerator: 'CmdOrCtrl+O',
+    click: function (item, focusedWindow) {
+      dialog.showOpenDialog({
+        properties: ['Open Markdown File'],
+        filters: [{
+          name: 'Markdown File', extensions: ['md']
+        }]
+      }, function (files) {
+        if (files.length > 0) {
+          files = files[0]
+          if (files) {
+            mainWindow.webContents.send('open', files)
+            currentFile = files
+            mainWindow.webContents.send('setTitle', currentFile)
+          }
+        }
+      })
+    }
+  }, {
+    label: '&Close',
+    accelerator: 'CmdOrCtrl+W',
+    click: function (item, focusedWindow) {
+      mainWindow.webContents.send('open', null)
+      currentFile = null
+      mainWindow.webContents.send('setTitle', currentFile)
+    }
+  }, {
+    label: '&Save',
+    accelerator: 'CmdOrCtrl+S',
+    click: function (item, focusedWindow) {
+      if (currentFile) {
+        mainWindow.webContents.send('save', currentFile)
+      } else {
+        dialog.showSaveDialog({
+          properties: ['Save QMarkdown File'],
+          filters: [{
+            name: 'QMarkdown File', extensions: ['md']
+          }]
+        }, function (files) {
+          if (files) {
+            mainWindow.webContents.send('save', files)
+            currentFile = files
+            mainWindow.webContents.send('setTitle', currentFile)
+          }
+        })
+      }
+    }
+  }, {
+    label: 'Save &As',
+    accelerator: 'CmdOrCtrl+Shift+S',
+    click: function (item, focusedWindow) {
+      dialog.showSaveDialog({
+        properties: ['Save QMarkdown File'],
+        filters: [{
+          name: 'QMarkdown File', extensions: ['md']
+        }]
+      }, function (files) {
+        if (files) {
+          mainWindow.webContents.send('save', files)
+          currentFile = files
+          mainWindow.webContents.send('setTitle', currentFile)
+        }
+      })
+    }
+  }, {
+    type: "separator"
+  }, {
+    label: 'Export as &PDF',
+    accelerator: 'CmdOrCtrl+P',
+    click: function (item, focusedWindow) {
+      dialog.showSaveDialog({
+        properties: ['Export as PDF'],
+        filters: [{
+          name: "PDF Document", extensions: ['pdf']
+        }]
+      }, function (files) {
+        if (files) {
+          mainWindow.webContents.send('exportPDF', files)
+        }
+      })
+    }
+  }, {
+    label: 'Export as HTML',
+    accelerator: 'CmdOrCtrl+H',
+    click: function (item, focusedWindow) {
+      dialog.showSaveDialog({
+        properties: ['Export as HTML'],
+        filters: [{
+          name: "HTML Document", extensions: ['html']
+        }]
+      }, function (files) {
+        if (files) {
+          mainWindow.webContents.send('exportHTML', files)
+        }
+      })
+    }
+  }]
+}, {
+  label: '&Edit',
+  submenu: [{
+    label: '&Undo',
     accelerator: 'CmdOrCtrl+Z',
     role: 'undo'
   }, {
-    label: 'Redo',
+    label: '&Redo',
     accelerator: 'Shift+CmdOrCtrl+Z',
     role: 'redo'
   }, {
     type: 'separator'
   }, {
-    label: 'Cut',
+    label: '&Cut',
     accelerator: 'CmdOrCtrl+X',
     role: 'cut'
   }, {
-    label: 'Copy',
+    label: '&Copy',
     accelerator: 'CmdOrCtrl+C',
     role: 'copy'
   }, {
-    label: 'Paste',
+    label: '&Paste',
     accelerator: 'CmdOrCtrl+V',
     role: 'paste'
   }, {
-    label: 'Select All',
+    label: 'Select &All',
     accelerator: 'CmdOrCtrl+A',
     role: 'selectall'
   }]
 }, {
-  label: 'Flavour',
+  label: '&Flavour',
   submenu: [{
-    label: 'Document',
+    label: '&Document',
     submenu: []
   }, {
-    label: 'Code',
+    label: '&Code',
     submenu: []
   }]
 }, {
-  label: 'Paper',
-  submenu: []
-}, {
-  label: 'View',
+  label: '&Paper',
   submenu: [{
-    label: 'Reload',
+    label: '&Auto Height',
+    type: "checkbox",
+    checked: true,
+    click: function (item) {
+      mainWindow.webContents.send("setAutoHeight", item.checked ? "./src/css/autoheight.css" : "");
+    }
+  }, {
+    type: "separator"
+  }]
+}, {
+  label: '&View',
+  submenu: [{
+    label: 'Toggle &Fullscreen',
+    accelerator: (function () {
+      if (process.platform === 'darwin') {
+        return 'Ctrl+Command+F'
+      } else {
+        return 'F11'
+      }
+    })(),
+    click: function (item, focusedWindow) {
+      if (focusedWindow) {
+        focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
+      }
+    }
+  }]
+}, {
+  label: '&About',
+  role: 'about',
+  submenu: [{
+    label: 'About &Author',
+    click: function () {
+      shell.openExternal('http://koishi.top')
+    }
+  }, {
+    label: 'About &QMarkdown',
+    click: function () {
+      shell.openExternal('https://github.com/xlnx/QMarkdown')
+    }
+  }]
+}]
+
+if (debug) {
+  template[4].submenu.push({
+    label: '&Reload',
     accelerator: 'CmdOrCtrl+R',
     click: function (item, focusedWindow) {
       if (focusedWindow) {
@@ -82,21 +229,7 @@ let template = [
       }
     }
   }, {
-    label: 'Toggle Fullscreen',
-    accelerator: (function () {
-      if (process.platform === 'darwin') {
-        return 'Ctrl+Command+F'
-      } else {
-        return 'F11'
-      }
-    })(),
-    click: function (item, focusedWindow) {
-      if (focusedWindow) {
-        focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
-      }
-    }
-  }, {
-    label: 'Toggle Devpanel',
+    label: 'Toggle &Devpanel',
     accelerator: (function () {
       if (process.platform === 'darwin') {
         return 'Alt+Command+I'
@@ -109,25 +242,15 @@ let template = [
         focusedWindow.toggleDevTools()
       }
     }
-  }]
-}, {
-  label: 'About',
-  role: 'about',
-  submenu: [{
-    label: 'About Author',
-    click: function () {
-      electron.shell.openExternal('http://koishi.top')
-    }
-  }, {
-    label: 'About QMarkdown',
-    click: function () {
-      electron.shell.openExternal('https://github.com/xlnx/QMarkdown')
-    }
-  }]
-}]
+  })
+}
 
 function initMenu () {
   initCodeFlavour()
+}
+
+function getShortName(file) {
+  return /^[^\.]+/g.exec(file)[0]
 }
 
 function initCodeFlavour() {
@@ -145,8 +268,8 @@ function initCodeFlavour() {
               throw err
             } else {
               if (stats.isFile()) {
-                template[1].submenu[1].submenu.push({
-                  label: files[i],
+                template[2].submenu[1].submenu.push({
+                  label: getShortName(files[i]),
                   href: filedir,
                   click: changeCodeFlavour
                 })
@@ -175,8 +298,8 @@ function initDocumentFlavour () {
               throw err
             } else {
               if (stats.isFile()) {
-                template[1].submenu[0].submenu.push({
-                  label: files[i],
+                template[2].submenu[0].submenu.push({
+                  label: getShortName(files[i]),
                   href: filedir,
                   click: changeDocumentFlavour
                 })
@@ -205,8 +328,8 @@ function initPaper () {
               throw err
             } else {
               if (stats.isFile()) {
-                template[2].submenu.push({
-                  label: files[i],
+                template[3].submenu.push({
+                  label: getShortName(files[i]),
                   href: filedir,
                   click: changePaperSize
                 })
@@ -224,6 +347,32 @@ function doInitMenu () {
   menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
 }
+
+function saveFile (event, file, dir) {
+  fs.writeFile(dir, file, function (err) {
+    if (err) {
+      throw err
+    }
+  })
+}
+
+ipcMain.on('save', saveFile)
+
+ipcMain.on('exportHTML', saveFile)
+
+ipcMain.on('exportPDF', function (event, options, dir) {
+  mainWindow.webContents.printToPDF(options, function (error, data) {
+    if (error) {
+      throw error
+    }
+    fs.writeFile(dir, data, function (error) {
+      if (error) {
+        throw error
+      }
+      shell.openExternal('file://' + dir)
+    })
+  })
+})
 
 function createWindow () {
   mainWindow = new BrowserWindow({width: 800, height: 600})

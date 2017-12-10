@@ -291,8 +291,7 @@ body {
 	div.page,
 	div.page div.padding {
 		border-width: 0 !important;
-		box-shadow: 0 0 0 0;
-		transform: scale(1, 1) !important;
+		box-shadow: none !important;
 		position: relative !important;
 		top: 0 !important;
 		left: 0 !important;
@@ -307,12 +306,18 @@ body {
 		padding: 0 !important;
 		margin: 0 !important;
 		overflow: visible !important;
+		-webkit-print-color-adjust: exact !important;
 	}
 	body > div.preview-mode {
 		width: inherit !important;
 		height: inherit !important;
 	}
-	@page thin:first {
+	/* @page thin:first {
 		margin: 2cm;
+	} */
+	.qmarkdown-preview-frame {
+		transform: scale(1, 1) !important;
+		height: auto !important;
+		width: auto !important;
 	}
 }

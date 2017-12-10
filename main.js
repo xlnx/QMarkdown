@@ -1,4 +1,4 @@
-// const debug = true
+const debug = true
 
 const electron = require('electron')
 const fs = require('fs')

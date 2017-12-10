@@ -260,8 +260,18 @@
 	}
 
 	function f(e) {
-		var t, r, a, s, l, u = i(e);
-		n(u) || (L.useBR ? (t = document.createElementNS("http://www.w3.org/1999/xhtml", "div"), t.innerHTML = e.innerHTML.replace(/\n/g, "").replace(/<br[ \/]*>/g, "\n")) : t = e, l = t.textContent, a = u ? d(u, l, !0) : b(l), r = c(t), r.length && (s = document.createElementNS("http://www.w3.org/1999/xhtml", "div"), s.innerHTML = a.value, a.value = o(r, c(s), l)), a.value = p(a.value), e.innerHTML = a.value, e.className = m(e.className, u, a.language), e.result = {
+		var t, r, a, s, l, u = i(e), y;
+		n(u) || (L.useBR ? (t = document.createElementNS("http://www.w3.org/1999/xhtml", "div"), t.innerHTML = e.innerHTML.replace(/\n/g, "").replace(/<br[ \/]*>/g, "\n")) : t = e, l = t.textContent, a = u ? d(u, l, !0) : b(l), r = c(t), r.length && (s = document.createElementNS("http://www.w3.org/1999/xhtml", "div"), s.innerHTML = a.value, a.value = o(r, c(s), l)), a.value = p(a.value), 
+		y = a.value.match(/\n/g).length,
+		a.value = '<div class="line">' + a.value.replace(/\n/g, '\n</div><div class="line">').replace(/<div class="line">$/, "</div>"),
+		a.value = '<table><tbody><tr><td class="gutter"><pre>' + (function (x) {
+			var result="";
+			for (var i=1;i<=x;++i) result+='<div class="line">'+i+'</div>';
+			return result;
+		}) (y) + '</pre></td><td class="code"><pre>' + a.value + '</pre></td></tr></tbody></table>',
+		e.innerHTML = a.value,
+		// a.value, 
+		e.className = m(e.className, u, a.language), e.result = {
 			language: a.language,
 			re: a.r
 		}, a.second_best && (e.second_best = {

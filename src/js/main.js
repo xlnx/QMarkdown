@@ -1,19 +1,18 @@
 const { markdown } = require('markdown');
 const { ipcRenderer } = require('electron');
 
-const pxpermm = $("#perm").width() / 1000;
-
+// const pxpermm = $("#perm").width() / 1000;
 const renderers = [
 	function () {
-		$('pre code').each(function(i, block) {
-			hljs.highlightBlock(block);
-		});
-		$("pre code").each(function () {
-			$(this).html("<ul><li>" + $(this).html().replace(/\n/g, "\n</li><li>") + "</li></ul>");
-			$(this).html($(this).html().replace(/<li><\/li><\/ul>/g, "</ul>"));
-		});
+		// setTimeout(function(){
+			$('pre code').each(function(i, block) {
+				hljs.highlightBlock(block);
+			});
+		// }, 0);
 	}, function () {
-		renderMathInElement($("#mdpreview").get(0));
+		// setTimeout(function(){
+			renderMathInElement($("#mdpreview").get(0));
+		// }, 0);
 	}
 ]
 
@@ -60,31 +59,65 @@ function md2html(md) {
 	if (v) for (x of v) {
 		html += '<script type="text/javascript" src="./flavour/custom/js/' + /<!--import:([^-]+)-->/gi.exec(x)[1] + '.js"/>';
 	}
-	return html;
+	return '<div class="qmarkdown-preview-frame">' + html + '</div>';
+}
+
+let renderer = {
+	occupied: false,
+	hangUp: false,
+	extra: false,
+	timer: function () {
+		let self = this;
+		setTimeout(function () {
+			if (self.hangUp) {
+				self.hangUp = false;
+				self.extra = false;
+				self.render(false);
+				self.timer();
+			} else {
+				if (self.extra) {
+					self.occupied = false;
+					self.extra = false;
+				} else {
+					self.extra = true;
+					self.render(true);
+					self.timer();
+				}
+			}
+		}, 150)
+	},
+	toggle: function () {
+		// this.render(true);
+		if (this.occupied) {
+			this.hangUp = true;
+		} else {
+			this.occupied = true;
+			this.render();
+			this.timer();
+		}
+	},
+	render: function (whole) {
+		$("#mdpreview").get(0).innerHTML = md2html($("#mdinput").val());
+		// console.log("as");
+		if (whole) {
+			for (let renderer of renderers) {
+				renderer();
+			}
+		}
+		$("#mdpreview").get(0).scrollTop = scrollPos;
+	}
 }
 
 function renderFile() {
-	$("#mdpreview").get(0).innerHTML = md2html($("#mdinput").val());
-	for (renderer of renderers) {
-		renderer();
-	}
-	let destWidth = ($("#mdpreview").width() - 2 * parseInt($("div.page").css("marginLeft")));
-	let srcWidth = $("div.page").width(), srcHeight = 0;
-	let e = destWidth / srcWidth;
-	let margin = parseInt($("div.page").css("margin"));
-	$("div.page").each(function (i) {
-		$(this).css({"top": srcHeight + "px"});
-		srcHeight += e * (margin + $(this).height());
-	})
-	$("#mdpreview").get(0).scrollTop = scrollPos;
+	renderer.toggle();
 }
 
 function renderPages() {
-	let destWidth = ($("#mdpreview").width() - 2 * parseInt($("div.page").css("marginLeft")));
-	let srcWidth = $("div.page").width();
+	let destWidth = $("#mdpreview").width() - 16;// - 2 * parseInt($("div.page").css("marginLeft"));
+	let srcWidth = $("div.page").width() + 2 * parseInt($("div.page").css("marginLeft"));
 	let e = destWidth / srcWidth;
 	renderFile();
-	$("head style.paper-zoom").get(0).innerHTML = "div.page{transform: scale(" + e + "," + e + ")}";
+	$("head style.paper-zoom").get(0).innerHTML = ".qmarkdown-preview-frame{transform: scale(" + e + "," + e + ")}";
 }
 
 function styleOnload(node, callback) {
@@ -137,7 +170,12 @@ function poll(node, callback) {
 }
 
 function keepScrollPos() {
-	scrollPos = $("#mdpreview").get(0).scrollTop;
+	// if (scrollLock) {
+	// 	$("#mdpreview").get(0).scrollTop = scrollPos;
+	// 	console.log(scrollPos);
+	// } else {
+		scrollPos = $("#mdpreview").get(0).scrollTop;
+	// }
 }
 
 let sideBar = {
@@ -246,7 +284,7 @@ $("#mdinput").get(0).addEventListener('input', function () {
 
 bind("#page-margin-top", "page.margin.top", {
 	type: "value",
-	default: ["", 2.54],
+	default: ["", "2.54"],
 	setter: function (value) {
 		$("head style.page-padding-top").get(0).innerHTML =
 		  "div.page div.padding {padding-top:" + value + "cm} @page {margin-top:" + value + "cm}";
@@ -256,7 +294,7 @@ bind("#page-margin-top", "page.margin.top", {
 
 bind("#page-margin-bottom", "page.margin.bottom", {
 	type: "value",
-	default: ["", 2.54],
+	default: ["", "2.54"],
 	setter: function (value) {
 		$("head style.page-padding-bottom").get(0).innerHTML =
 		  "div.page div.padding {padding-bottom:" + value + "cm} @page {margin-bottom:" + value + "cm}";
@@ -266,24 +304,24 @@ bind("#page-margin-bottom", "page.margin.bottom", {
 
 bind("#page-margin-left", "page.margin.left", {
 	type: "value",
-	default: ["", 1.91],
+	default: ["", "1.91"],
 	setter: function (value) {
 		$("head style.page-padding-left").get(0).innerHTML =
 		  "div.page div.padding {padding-left:" + value + "cm} @page {margin-left:" + value + "cm}";
 		$("head style.print-padding").get(0).innerHTML = 
-		  "@media print {div.frame {padding-right:" + value + configure.get("page.margin.right") + "cm !important; box-sizing: border-box !important}}";
+		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.right"))) + "cm !important; box-sizing: border-box !important}}";
 		renderFile();
 	}
 });
 
 bind("#page-margin-right", "page.margin.right", {
 	type: "value",
-	default: ["", 1.91],
+	default: ["", "1.91"],
 	setter: function (value) {
 		$("head style.page-padding-right").get(0).innerHTML =
 		  "div.page div.padding {padding-right:" + value + "cm} @page {margin-right:" + value + "cm}";
 		$("head style.print-padding").get(0).innerHTML = 
-		  "@media print {div.frame {padding-right:" + value + configure.get("page.margin.left") + "cm !important; box-sizing: border-box !important}}";
+		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.right"))) + "cm !important; box-sizing: border-box !important}}";
 		renderFile();
 	}
 });

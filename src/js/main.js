@@ -1,18 +1,32 @@
-hljs.initHighlightingOnLoad();
-
+const { markdown } = require('markdown');
 const { ipcRenderer } = require('electron');
 
 const pxpermm = $("#perm").width() / 1000;
 
-const renderers = [function () {
-	$('pre.hljs-pre code').each(function(i, block) {
-		hljs.highlightBlock(block);
-	});
-	$("pre.hljs-pre code").each(function () {
-		$(this).html("<ul><li>" + $(this).html().replace(/\n/g, "\n</li><li>") + "</li></ul>");
-		$(this).html($(this).html().replace(/<li><\/li><\/ul>/g, "</ul>"));
-	});
-}]
+const renderers = [
+	function () {
+		$('pre code').each(function(i, block) {
+			hljs.highlightBlock(block);
+		});
+		$("pre code").each(function () {
+			$(this).html("<ul><li>" + $(this).html().replace(/\n/g, "\n</li><li>") + "</li></ul>");
+			$(this).html($(this).html().replace(/<li><\/li><\/ul>/g, "</ul>"));
+		});
+	}, function () {
+		renderMathInElement($("#mdpreview").get(0));
+	}
+]
+
+const defaultConf = {
+	page: {
+		margin: {
+			top: 2.54,
+			bottom: 2.54,
+			left: 1.91,
+			right: 1.91
+		}
+	}
+}
 
 marked.setOptions({
 	renderer: new marked.Renderer(),
@@ -25,8 +39,18 @@ marked.setOptions({
 	smartypants: false
 });
 
+let mdconverter = marked;//markdown.toHTML;
+let scrollPos;
+let fileState = [true, true];
+let fileContent = "";
+
 function md2html(md) {
-	let html = '<div class="page"><div class="padding"><div class="frame">' + marked(md) + '</div></div></div>';
+	let mds = md.split("$$");
+	for (let i = 1; i < mds.length; i += 2) {
+		mds[i] = mds[i].replace(/([\+\-\>#_])/g, "\\$1");
+	}
+	md = mds.join("$$");
+	let html = '<div class="page"><div class="padding"><div class="frame">' + mdconverter(md) + '</div></div></div>';
 	html = html.replace(/<!--page-->/gi, '</div></div></div><div class="page"><div class="padding"><div class="frame">');
 	let v = html.match(/<!--style:([^-]+)-->/gi);
 	if (v) for (x of v) {
@@ -52,6 +76,7 @@ function renderFile() {
 		$(this).css({"top": srcHeight + "px"});
 		srcHeight += e * (margin + $(this).height());
 	})
+	$("#mdpreview").get(0).scrollTop = scrollPos;
 }
 
 function renderPages() {
@@ -111,13 +136,163 @@ function poll(node, callback) {
 	}
 }
 
-$("#mdinput").get(0).addEventListener('input', renderFile);
+function keepScrollPos() {
+	scrollPos = $("#mdpreview").get(0).scrollTop;
+}
 
-$("#mdinput").get(0).addEventListener('propertychange', renderFile);
+let sideBar = {
+	dom: $("div.side-bar").get(0),
+	showing: false,
+	width: "300px",
+	toggle: function () {
+		if (this.showing = !this.showing) {
+			this.dom.style.left = "0";
+			$(this.dom).focus();
+		} else {
+			this.dom.style.left = "-" + this.width;
+			$("#mdinput").focus();
+		}
+	}
+}
+
+let configure = {
+	data: {},
+	lock: {},
+	setter: {},
+	dump: function () {
+		return "<!--|" + JSON.stringify(this.data) + "|-->\n";
+	},
+	set: function (key, val) {
+		let origin = this.data;
+		let l = key.split(".");
+		let k = l.pop();
+		for (let x of l) {
+			if (!origin[x]) {
+				origin[x] = {};
+			}
+			origin = origin[x];
+		}
+		this.setter[key](val, origin[k]);
+		origin[k] = val;
+	},
+	get: function (key) {
+		let origin = this.data;
+		let l = key.split(".");
+		let k = l.pop();
+		for (let x of l) {
+			if (!origin[x]) {
+				origin[x] = {};
+			}
+			origin = origin[x];
+		}
+		return origin[k];
+	},
+	load: function(conf) {
+		let self = this;
+		(function iter(keys, conf) {
+			for (x in conf) {
+				if (typeof conf[x] == "object" && !(conf[x] instanceof Array)) {
+					iter((keys ? keys + "." : "") + x, conf[x]);
+				} else {
+					self.set((keys ? keys + "." : "") + x, conf[x])
+				}
+			}
+		}) ("", conf);
+	}
+}
+
+function bind(selector, key, options) {
+	switch (options.type) {
+	case "value":
+		!function () {
+			let k = key;
+			let e = $(selector);
+			let f = options.setter;
+			let v = options.default;
+			if (typeof v[0] != "function") {
+				let y = v[0];
+				v[0] = (x) => { return x == y; };
+			}
+			function getval() {
+				return e.val();
+			}
+			e.bind("input propertychange", function () {
+				if (!configure.lock[k]) {
+					configure.lock[k] = true;
+					configure.set(k, getval());
+					configure.lock[k] = false;
+				}
+			})
+			configure.setter[k] = function (value) {
+				if (v[0](value)) {
+					value = v[1];
+				} else {
+					e.val(value);
+				}
+				f(value);
+			}
+		}(); break;
+	default:
+		throw "not defined";
+	}
+}
+
+//  Event Listeners
+
+$("#mdinput").get(0).addEventListener('input', function () {
+	renderFile();
+	fileState[0] = $("#mdinput").val() == fileContent;
+});
+
+bind("#page-margin-top", "page.margin.top", {
+	type: "value",
+	default: ["", 2.54],
+	setter: function (value) {
+		$("head style.page-padding-top").get(0).innerHTML =
+		  "div.page div.padding {padding-top:" + value + "cm} @page {margin-top:" + value + "cm}";
+		renderFile();
+	}
+});
+
+bind("#page-margin-bottom", "page.margin.bottom", {
+	type: "value",
+	default: ["", 2.54],
+	setter: function (value) {
+		$("head style.page-padding-bottom").get(0).innerHTML =
+		  "div.page div.padding {padding-bottom:" + value + "cm} @page {margin-bottom:" + value + "cm}";
+		renderFile();
+	}
+});
+
+bind("#page-margin-left", "page.margin.left", {
+	type: "value",
+	default: ["", 1.91],
+	setter: function (value) {
+		$("head style.page-padding-left").get(0).innerHTML =
+		  "div.page div.padding {padding-left:" + value + "cm} @page {margin-left:" + value + "cm}";
+		$("head style.print-padding").get(0).innerHTML = 
+		  "@media print {div.frame {padding-right:" + value + configure.get("page.margin.right") + "cm !important; box-sizing: border-box !important}}";
+		renderFile();
+	}
+});
+
+bind("#page-margin-right", "page.margin.right", {
+	type: "value",
+	default: ["", 1.91],
+	setter: function (value) {
+		$("head style.page-padding-right").get(0).innerHTML =
+		  "div.page div.padding {padding-right:" + value + "cm} @page {margin-right:" + value + "cm}";
+		$("head style.print-padding").get(0).innerHTML = 
+		  "@media print {div.frame {padding-right:" + value + configure.get("page.margin.left") + "cm !important; box-sizing: border-box !important}}";
+		renderFile();
+	}
+});
 
 $(function () {
 	$("#mdinput").focus();
 	(window.onresize = renderPages)();
+	keepScrollPos();
+	configure.load(defaultConf);
 })
 
 ipcRenderer.on('changeCodeFlavour', (event, arg) => {
@@ -136,16 +311,17 @@ ipcRenderer.on('changePaperSize', (event, arg) => {
 
 ipcRenderer.on('setAutoHeight', (event, arg) => {
 	let link = $("head link.auto-height").get(0);
+	link.setAttribute('href', arg);
 	if (arg != "") {
 		styleOnload(link, renderPages);
 	} else {
 		renderPages();
 	}
-	link.setAttribute('href', arg);
 })
 
-ipcRenderer.on('save', (event, arg) => {
-	ipcRenderer.send('save', $("#mdinput").val(), arg);
+ipcRenderer.on('save', (event, arg, after) => {
+	fileState[0] = true, fileState[1] = true;
+	ipcRenderer.send('save', configure.dump() + $("#mdinput").val(), arg, after);
 })
 
 ipcRenderer.on('exportHTML', (event, arg) => {
@@ -257,7 +433,19 @@ ipcRenderer.on('open', (event, arg) => {
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4) {
 				if (xhr.status == 200) {
-					$("#mdinput").val(xhr.responseText);
+					let file = xhr.responseText;
+					let conf = file.match(/^<!--\|[^\|]*\|-->[\n]/);
+					if (conf) {
+						conf = JSON.parse(conf[0].match(/\|([^\|]*)\|/)[1]);
+						configure.load(conf);
+						$("#mdinput").val(file.replace(/^<!--\|[^\|]*\|-->[\n]/, ""));
+						fileState = [true, true];
+						fileContent = $("#mdinput").val();
+					} else {
+						$("#mdinput").val(file);
+						fileState = [true, false];
+						fileContent = $("#mdinput").val();
+					}
 				} else {
 					throw xhr.status;
 				}
@@ -265,7 +453,18 @@ ipcRenderer.on('open', (event, arg) => {
 		}
 		xhr.send(null);
 	} else {
+		configure.load(defaultConf);
 		$("#mdinput").val("");
+		fileState = [true, true];
+		fileContent = $("#mdinput").val();
 	}
 	renderFile();
+})
+
+ipcRenderer.on('toggleSideBar', () => {
+	sideBar.toggle()
+})
+
+ipcRenderer.on('checkFileState', (event, arg) => {
+	ipcRenderer.send('checkFileState', arg, fileState);
 })

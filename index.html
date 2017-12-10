@@ -4,19 +4,27 @@
 <head>
   <meta charset="UTF-8">
   <title>QMarkdown</title>
-  <link class="native" rel="stylesheet" href="./src/css/editor.css"/>
-  <link class="auto-height native" rel="stylesheet" href="./src/css/autoheight.css"/>
-  
-  <link class="code-flavour" rel="stylesheet" href="./flavour/code/default.css"/>
-  <link class="flavour" rel="stylesheet" href="./flavour/default.css"/>
-  <link class="paper-size" rel="stylesheet" href="./paper/A4.css"/>
+  <link class="native" rel="stylesheet" href="./src/css/editor.css" />
+  <link class="auto-height native" rel="stylesheet" href="./src/css/autoheight.css" />
 
-  <link rel="stylesheet" href="./src/css/main.css"/>
-  <link rel="stylesheet" href="./src/css/highlight.css"/>
+  <link class="code-flavour" rel="stylesheet" href="./flavour/code/default.css" />
+  <link class="flavour" rel="stylesheet" href="./flavour/default.css" />
+  <link class="paper-size" rel="stylesheet" href="./paper/A4.css" />
 
-  <style class="paper-zoom native">div.page{transform: scale(1, 1)}</style>
-  
-  <style class="paper-padding">div.page div.padding{padding-top:2.54cm;padding-bottom:2.54cm;padding-left:1.91cm;padding-right:1.91cm}</style>
+  <link rel="stylesheet" href="./src/css/main.css" />
+  <link rel="stylesheet" href="./src/css/highlight.css" />
+  <link rel="stylesheet" href="./src/css/katex.css" />
+
+  <style class="paper-zoom native">
+    div.page {
+      transform: scale(1, 1)
+    }
+  </style>
+  <style class="print-padding"></style>
+  <style class="page-padding-top"></style>
+  <style class="page-padding-bottom"></style>
+  <style class="page-padding-left"></style>
+  <style class="page-padding-right"></style>
 </head>
 
 <body>
@@ -25,13 +33,42 @@
     <div class="span6 main">
       <textarea id="mdinput" class="text mousetrap"></textarea>
     </div>
-    <div id="mdpreview" class="span6 preview">
+    <div id="mdpreview" class="span6 preview" onscroll="keepScrollPos()">
       <div class="page"></div>
+    </div>
+  </div>
+  <div class="side-bar">
+    <div class="back-arrow">
+      <dd></dd><dd></dd><dd></dd><dd onclick="sideBar.toggle()"></dd>
+    </div>
+    <div class="input-group col-center-block">
+      <div class="option">
+        <span class="title">Top: </span>
+        <input type="number" id="page-margin-top" step="0.01" value="2.54" placeholder="2.54" />
+        <span>cm</span>
+      </div>
+      <div class="option">
+        <span class="title">Bottom: </span>
+        <input type="number" id="page-margin-bottom" step="0.01" value="2.54" placeholder="2.54" />
+        <span>cm</span>
+      </div>
+      <div class="option">
+        <span class="title">Left: </span>
+        <input type="number" id="page-margin-left" step="0.01" value="1.91" placeholder="1.91" />
+        <span>cm</span>
+      </div>
+      <div class="option">
+        <span class="title">Right: </span>
+        <input type="number" id="page-margin-right" step="0.01" value="1.91" placeholder="1.91" />
+        <span>cm</span>
+      </div>
     </div>
   </div>
   <div class="scripts">
     <script src="./src/js/jquery.min.js"></script>
-    <script src="./src/js/highlight.min.js"></script>
+    <script src="./src/js/highlight.js"></script>
+    <script src="./src/js/katex.js"></script>
+    <script src="./src/js/katex.auto-render.js"></script>
 
     <script class="native" src="./src/js/markdown.js"></script>
     <script class="native" src="./src/js/main.js"></script>

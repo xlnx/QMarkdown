@@ -1,4 +1,4 @@
-const debug = false
+// const debug = true
 
 const electron = require('electron')
 const fs = require('fs')
@@ -30,54 +30,29 @@ function changePaperSize (item) {
 let template = [
 {
   label: '&File',
-  submenu: [{
+  submenu: [ {
+    label: '&New',
+    accelerator: 'CmdOrCtrl+N',
+    click: function (item, focusedWindow) {
+      mainWindow.webContents.send('checkFileState', 'new')
+    }
+  }, {
     label: '&Open',
     accelerator: 'CmdOrCtrl+O',
     click: function (item, focusedWindow) {
-      dialog.showOpenDialog({
-        properties: ['Open Markdown File'],
-        filters: [{
-          name: 'Markdown File', extensions: ['md']
-        }]
-      }, function (files) {
-        if (files.length > 0) {
-          files = files[0]
-          if (files) {
-            mainWindow.webContents.send('open', files)
-            currentFile = files
-            mainWindow.webContents.send('setTitle', currentFile)
-          }
-        }
-      })
+      mainWindow.webContents.send('checkFileState', 'open')
     }
   }, {
     label: '&Close',
     accelerator: 'CmdOrCtrl+W',
     click: function (item, focusedWindow) {
-      mainWindow.webContents.send('open', null)
-      currentFile = null
-      mainWindow.webContents.send('setTitle', currentFile)
+      mainWindow.webContents.send('checkFileState', 'close')
     }
   }, {
     label: '&Save',
     accelerator: 'CmdOrCtrl+S',
     click: function (item, focusedWindow) {
-      if (currentFile) {
-        mainWindow.webContents.send('save', currentFile)
-      } else {
-        dialog.showSaveDialog({
-          properties: ['Save QMarkdown File'],
-          filters: [{
-            name: 'QMarkdown File', extensions: ['md']
-          }]
-        }, function (files) {
-          if (files) {
-            mainWindow.webContents.send('save', files)
-            currentFile = files
-            mainWindow.webContents.send('setTitle', currentFile)
-          }
-        })
-      }
+      toggleSave()
     }
   }, {
     label: 'Save &As',
@@ -175,6 +150,11 @@ let template = [
     checked: true,
     click: function (item) {
       mainWindow.webContents.send("setAutoHeight", item.checked ? "./src/css/autoheight.css" : "");
+    }
+  }, {
+    label: 'Page &Options',
+    click: function (item) {
+      mainWindow.webContents.send('toggleSideBar')
     }
   }, {
     type: "separator"
@@ -348,13 +328,116 @@ function doInitMenu () {
   Menu.setApplicationMenu(menu)
 }
 
-function saveFile (event, file, dir) {
+function saveFile (event, file, dir, after) {
   fs.writeFile(dir, file, function (err) {
     if (err) {
       throw err
+    } else {
+      if (after) {
+        switch (after) {
+          case "close": closeFile(); break
+          case "open": openFile(); break
+          default: {
+            throw "invalid operation"
+          }
+        }
+      }
     }
   })
 }
+
+function openFile () {
+  dialog.showOpenDialog({
+    properties: ['Open Markdown File'],
+    filters: [{
+      name: 'Markdown File', extensions: ['md']
+    }]
+  }, function (files) {
+    if (files && files.length > 0) {
+      files = files[0]
+      if (files) {
+        mainWindow.webContents.send('open', files)
+        currentFile = files
+        mainWindow.webContents.send('setTitle', currentFile)
+      }
+    }
+  })
+}
+
+function closeFile () {
+  mainWindow.webContents.send('open', null)
+  currentFile = null
+  mainWindow.webContents.send('setTitle', currentFile)
+}
+
+function toggleSave(after) {
+  if (currentFile) {
+    mainWindow.webContents.send('save', currentFile, after)
+  } else {
+    dialog.showSaveDialog({
+      properties: ['Save QMarkdown File'],
+      filters: [{
+        name: 'QMarkdown File', extensions: ['md']
+      }]
+    }, function (files) {
+      if (files) {
+        mainWindow.webContents.send('save', files, after)
+        currentFile = files
+        mainWindow.webContents.send('setTitle', currentFile)
+      }
+    })
+  }
+}
+
+ipcMain.on('checkFileState', function (event, channel, state) {
+  switch (channel) {
+    case 'open': {
+      if (!state[0] || !state[1]) {
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'Confirm',
+          message: !state[0] ? "Save current file before close?" : "Update current file to QMarkdown style before close?",
+          buttons: ['Yes', 'No', 'Cancel']
+        }, function (index) {
+          switch (index) {
+            case 0: {
+              toggleSave('open')
+            } break;
+            case 1: {
+              openFile()
+            }
+          }
+        })
+      } else {
+        openFile()
+      }
+    } break;
+    case 'close': case 'new': {
+      if (!state[0] || !state[1]) {
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'Confirm',
+          message: !state[0] ? "Save current file before close?" : "Update current file to QMarkdown style before close?",
+          buttons: ['Yes', 'No', 'Cancel']
+        }, function (index) {
+          switch (index) {
+            case 0: {
+              toggleSave('close')
+            } break;
+            case 1: {
+              closeFile()
+            }
+          }
+        })
+      } else {
+        closeFile()
+      }
+    } break;
+    default: {
+      throw "unknown command";
+    }
+  }
+})
 
 ipcMain.on('save', saveFile)
 

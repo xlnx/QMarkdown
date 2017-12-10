@@ -183,7 +183,8 @@ body {
 	overflow-y: auto
 }
 
-pre.hljs-pre, .hljs {
+/* pre.hljs-pre, */
+.hljs {
 	background: #f6f6f6;
 	color: #657b83;
 	-webkit-text-size-adjust: none
@@ -290,6 +291,7 @@ pre.hljs-pre, .hljs {
 	div.page,
 	div.page div.padding {
 		border-width: 0 !important;
+		box-shadow: 0 0 0 0;
 		transform: scale(1, 1) !important;
 		position: relative !important;
 		top: 0 !important;

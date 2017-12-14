@@ -1,0 +1,90 @@
+.CodeMirror-cursor {
+	border-left: 3px solid #E4629A;
+}
+
+.CodeMirror-activeline-background {
+    left: -60px;
+    right: -30px;
+    background: rgba(204,204,204,0.2);
+}
+
+.CodeMirror::selection {
+	background-color: #d7d4f0;
+}
+
+.CodeMirror::selection:focus {
+	background-color: #d9d9d9;
+}
+
+.CodeMirror {
+	background: #f3f2ee;
+	line-height: 27.2px;
+	font-family: "PT Serif", 'Times New Roman', Times;
+	color: #1f0909;
+	font-size: 1.2rem;
+}
+
+.CodeMirror-gutters {
+	background: #f3f2ee;
+	border-right: 0px;
+}
+
+.CodeMirror-gutter {
+    white-space: normal;
+    height: 100%;
+    -moz-box-sizing: content-box;
+    box-sizing: content-box;
+    padding-bottom: 30px;
+    margin-bottom: -32px;
+    display: inline-block;
+	width: 44px;
+    min-width: 4ch !important;
+}
+
+.CodeMirror-linenumber {
+    padding: 0 3px 0 5px;
+    text-align: right;
+    color: #999;
+}
+
+.CodeMirror-gutter-elt {
+    position: absolute;
+    cursor: default;
+    z-index: 4;
+}
+
+.CodeMirror-linenumber {
+    width: auto !important;
+}
+
+.CodeMirror-gutter-wrapper {
+    position: absolute !important;
+    left: -6ch !important;
+    min-width: 4ch !important;
+    text-align: right;
+    font-family: monospace;
+    font-size: 0.8rem;
+    margin-top: 0.10rem;
+    display: inline-block;
+    opacity: 0.6;
+}
+
+.cm-tab {
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAMCAYAAAAkuj5RAAAAAXNSR0IArs4c6QAAAGFJREFUSMft1LsRQFAQheHPowAKoACx3IgEKtaEHujDjORSgWTH/ZOdnZOcM/sgk/kFFWY0qV8foQwS4MKBCS3qR6ixBJvElOobYAtivseIE120FaowJPN75GMu8j/LfMwNjh4HUpwg4LUAAAAASUVORK5CYII=");
+    background-position: right;
+    background-repeat: no-repeat;
+    opacity: 1;
+}
+
+.cm-trailing-space-new-line::after, .cm-startspace::after, .cm-starttab .cm-tab::after {
+    content: "•";
+    position: absolute;
+    left: 0px;
+    opacity: 0;
+    font-family: LetterGothicStd, monospace;
+}
+
+.CodeMirror-activeline-gutter,
+.CodeMirror-activeline-background {
+	background: #ecebe8;
+}

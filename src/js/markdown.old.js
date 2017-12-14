@@ -139,15 +139,15 @@
 		.replace(/\t/g, '    ')
 		.replace(/\u00a0/g, ' ')
 		.replace(/\u2424/g, '\n');
-
-		return this.token(src, true, 0);
+	
+		return this.token(src, true);
 	};
 	
 	/**
 	 * Lexing
 	 */
 	
-	Lexer.prototype.token = function(src, top, startPos, bq) {
+	Lexer.prototype.token = function(src, top, bq) {
 		var src = src.replace(/^ +$/gm, '')
 		, next
 		, loose
@@ -165,12 +165,8 @@
 			src = src.substring(cap[0].length);
 			if (cap[0].length > 1) {
 			this.tokens.push({
-				type: 'space',
-				start: startPos,
-				end: startPos += cap[0].length
+				type: 'space'
 			});
-			} else {
-				startPos += cap[0].length;
 			}
 		}
 	
@@ -182,9 +178,7 @@
 			type: 'code',
 			text: !this.options.pedantic
 				? cap.replace(/\n+$/, '')
-				: cap,
-				start: startPos,
-				end: startPos += cap[0].length
+				: cap
 			});
 			continue;
 		}
@@ -195,9 +189,7 @@
 			this.tokens.push({
 			type: 'code',
 			lang: cap[2],
-			text: cap[3] || '',
-			start: startPos,
-			end: startPos += cap[0].length
+			text: cap[3] || ''
 			});
 			continue;
 		}
@@ -208,9 +200,7 @@
 			this.tokens.push({
 			type: 'heading',
 			depth: cap[1].length,
-			text: cap[2],
-			start: startPos,
-			end: startPos += cap[0].length
+			text: cap[2]
 			});
 			continue;
 		}
@@ -223,9 +213,7 @@
 			type: 'table',
 			header: cap[1].replace(/^ *| *\| *$/g, '').split(/ *\| */),
 			align: cap[2].replace(/^ *|\| *$/g, '').split(/ *\| */),
-			cells: cap[3].replace(/\n$/, '').split('\n'),
-			start: startPos,
-			end: startPos += cap[0].length
+			cells: cap[3].replace(/\n$/, '').split('\n')
 			};
 	
 			for (i = 0; i < item.align.length; i++) {
@@ -255,9 +243,7 @@
 			this.tokens.push({
 			type: 'heading',
 			depth: cap[2] === '=' ? 1 : 2,
-			text: cap[1],
-			start: startPos,
-			end: startPos += cap[0].length
+			text: cap[1]
 			});
 			continue;
 		}
@@ -266,9 +252,7 @@
 		if (cap = this.rules.hr.exec(src)) {
 			src = src.substring(cap[0].length);
 			this.tokens.push({
-			type: 'hr',
-			start: startPos,
-			end: startPos += cap[0].length
+			type: 'hr'
 			});
 			continue;
 		}
@@ -278,13 +262,10 @@
 			src = src.substring(cap[0].length);
 	
 			this.tokens.push({
-			type: 'blockquote_start',
-			start: startPos,
-			end: startPos += cap[0].length
+			type: 'blockquote_start'
 			});
 	
 			cap = cap[0].replace(/^ *> ?/gm, '');
-			// cap.startPos = startPos;
 	
 			// Pass `top` to keep the current
 			// "toplevel" state. This is exactly
@@ -292,9 +273,7 @@
 			this.token(cap, top, true);
 	
 			this.tokens.push({
-			type: 'blockquote_end',
-			start: startPos,
-			end: startPos
+			type: 'blockquote_end'
 			});
 	
 			continue;
@@ -302,31 +281,16 @@
 	
 		// list
 		if (cap = this.rules.list.exec(src)) {
-			var start = startPos, pos;
 			src = src.substring(cap[0].length);
 			bull = cap[2];
 	
-			let tok = {
-				type: 'list_start',
-				ordered: bull.length > 1,
-				start: startPos,
-				end: startPos += cap[0].length
-			}
-			this.tokens.push(tok);
+			this.tokens.push({
+			type: 'list_start',
+			ordered: bull.length > 1
+			});
 	
 			// Get each top-level item.
-			let o = (function (reg, inputStr){
-				reg.lastIndex=0; let cap=[], idx=[];
-				while ((result = reg.exec(inputStr)) != null){
-				   cap.push(result[0]); 
-				   var fIndex=reg.firstIndex;
-				   var lIndex=reg.lastIndex-result[0].length;
-				   idx.push(lIndex + start);
-				} 
-				return [cap, idx];
-			}) (this.rules.item, cap[0]);
-			let positions = o[1];
-			cap = o[0];//cap[0].match(this.rules.item);
+			cap = cap[0].match(this.rules.item);
 	
 			next = false;
 			l = cap.length;
@@ -334,8 +298,6 @@
 	
 			for (; i < l; i++) {
 			item = cap[i];
-			pos = positions[i];
-			pos += item.length;
 	
 			// Remove the list item's bullet
 			// so it is seen as the next token.
@@ -356,10 +318,7 @@
 			if (this.options.smartLists && i !== l - 1) {
 				b = block.bullet.exec(cap[i + 1])[0];
 				if (bull !== b && !(bull.length > 1 && b.length > 1)) {
-				var spp = cap.slice(i + 1).join('\n');
-				src = spp + src;
-				startPos -= spp.length;
-				tok.end = startPos;
+				src = cap.slice(i + 1).join('\n') + src;
 				i = l - 1;
 				}
 			}
@@ -373,30 +332,22 @@
 				if (!loose) loose = next;
 			}
 	
-			pos -= item.length;
-
 			this.tokens.push({
 				type: loose
 				? 'loose_item_start'
-				: 'list_item_start',
-				start: pos,
-				end: pos + item.length
+				: 'list_item_start'
 			});
 	
 			// Recurse.
-			this.token(item, false, pos, bq);
+			this.token(item, false, bq);
 	
 			this.tokens.push({
-				type: 'list_item_end',
-				start: pos,
-				end: pos + item.length
+				type: 'list_item_end'
 			});
 			}
 	
 			this.tokens.push({
-			type: 'list_end',
-			start: startPos,
-			end: startPos
+			type: 'list_end'
 			});
 	
 			continue;
@@ -411,9 +362,7 @@
 				: 'html',
 			pre: !this.options.sanitizer
 				&& (cap[1] === 'pre' || cap[1] === 'script' || cap[1] === 'style'),
-			text: cap[0],
-			start: startPos,
-			end: startPos += cap[0].length
+			text: cap[0]
 			});
 			continue;
 		}
@@ -436,9 +385,7 @@
 			type: 'table',
 			header: cap[1].replace(/^ *| *\| *$/g, '').split(/ *\| */),
 			align: cap[2].replace(/^ *|\| *$/g, '').split(/ *\| */),
-			cells: cap[3].replace(/(?: *\| *)?\n$/, '').split('\n'),
-			start: startPos,
-			end: startPos += cap[0].length
+			cells: cap[3].replace(/(?: *\| *)?\n$/, '').split('\n')
 			};
 	
 			for (i = 0; i < item.align.length; i++) {
@@ -471,9 +418,7 @@
 			type: 'paragraph',
 			text: cap[1].charAt(cap[1].length - 1) === '\n'
 				? cap[1].slice(0, -1)
-				: cap[1],
-			start: startPos,
-			end: startPos += cap[0].length
+				: cap[1]
 			});
 			continue;
 		}
@@ -484,9 +429,7 @@
 			src = src.substring(cap[0].length);
 			this.tokens.push({
 			type: 'text',
-			text: cap[0],
-			start: startPos,
-			end: startPos += cap[0].length
+			text: cap[0]
 			});
 			continue;
 		}
@@ -505,7 +448,7 @@
 	 */
 	
 	var inline = {
-		escape: /^\\([`*{}\[\]()#+\-.!_>\$]|\\(?![\]\[\(\)]))/,
+		escape: /^\\([\\`*{}\[\]()#+\-.!_>])/,
 		autolink: /^<([^ >]+(@|:\/)[^ >]+)>/,
 		url: noop,
 		tag: /^<!--[\s\S]*?-->|^<\/?\w+(?:"[^"]*"|'[^']*'|[^'">])*?>/,
@@ -517,9 +460,7 @@
 		code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
 		br: /^ {2,}\n(?!\s*$)/,
 		del: noop,
-		text: /^[\s\S]+?(?=\$\$|[\\<!\[_*`]| {2,}\n|$)/,
-		//qtag
-		qtag: /^<!--:([:><\+\|\.]*)((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->/
+		text: /^[\s\S]+?(?=[\\<!\[_*`]| {2,}\n|$)/
 	};
 	
 	inline._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
@@ -560,11 +501,7 @@
 		text: replace(inline.text)
 		(']|', '~]|')
 		('|', '|https?://|')
-		(),
-		//katex
-		inlinekatex: /^ *\\\\\(((?:[^\\]|(?:\\[^\\]|\\\\(?!\))))*)\\\\\)/,
-		//katex
-		katex: /^ *(?:\$\$((?:[^\$]|\\\$)*)\$\$|\\\\\[((?:[^\\]|(?:\\[^\\]|\\\\(?!\])))*)\\\\\])/
+		()
 	});
 	
 	/**
@@ -661,14 +598,7 @@
 			out += this.renderer.link(href, null, text);
 			continue;
 		}
-		
-		//qtag
-		if (cap = this.rules.qtag.exec(src)) {
-			src= src.substring(cap[0].length);
-			out += this.renderer.qtag(cap[1], cap[2]);
-			continue;
-		}
-
+	
 		// tag
 		if (cap = this.rules.tag.exec(src)) {
 			if (!this.inLink && /^<a /i.test(cap[0])) {
@@ -746,20 +676,6 @@
 		if (cap = this.rules.del.exec(src)) {
 			src = src.substring(cap[0].length);
 			out += this.renderer.del(this.output(cap[1]));
-			continue;
-		}
-
-		// inlinekatex
-		if (cap = this.rules.inlinekatex.exec(src)) {
-			src = src.substring(cap[0].length);
-			out += this.renderer.inlinekatex(cap[1]);
-			continue;
-		}
-
-		//katex
-		if (cap = this.rules.katex.exec(src)) {
-			src = src.substring(cap[0].length);
-			out += this.renderer.katex(cap[1]);
 			continue;
 		}
 	
@@ -845,7 +761,7 @@
 		this.options = options || {};
 	}
 	
-	Renderer.prototype.code = function(code, lang, escaped, start, end) {
+	Renderer.prototype.code = function(code, lang, escaped) {
 		if (this.options.highlight) {
 		var out = this.options.highlight(code, lang);
 		if (out != null && out !== code) {
@@ -855,96 +771,59 @@
 		}
 	
 		if (!lang) {
-		return '<pre class="marked-elem" data-start="' 
-			+ start + '" data-end="' + end + '"><code>'
+		return '<pre><code>'
 			+ (escaped ? code : escape(code, true))
 			+ '\n</code></pre>';
 		}
 	
-		return '<pre class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '"><code class="'
+		return '<pre><code class="'
 		+ this.options.langPrefix
 		+ escape(lang, true)
 		+ '">'
 		+ (escaped ? code : escape(code, true))
 		+ '\n</code></pre>\n';
 	};
-
-	//katex
-	Renderer.prototype.katex = function(text, start, end) {
-		return '<span class="katex-block marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">$$'
-		+ text
-		+ '$$</span>';
-	};
-
-	Renderer.prototype.inlinekatex = function(text, start, end) {
-		return '<span class="katex-inline-block marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">\\('
-		+ text
-		+ '\\)</span>';
+	
+	Renderer.prototype.blockquote = function(quote) {
+		return '<blockquote>\n' + quote + '</blockquote>\n';
 	};
 	
-	Renderer.prototype.blockquote = function(quote, start, end) {
-		return '<blockquote class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">\n' + quote + '</blockquote>\n';
-	};
-	
-	//qtag
-	Renderer.prototype.qtag = function(category, classes, start, end) {
-		var tag = "";
-		var close = category[category.length - 1] == ".";
-		switch (category) {
-			case ":": tag = "div"; break;
-			default: tag = "span"; break;
-		}
-		return "<" + (close?"/":"") + tag + ' class="' + classes + ' marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">';
-	}
-
-	Renderer.prototype.html = function(html, start, end) {
+	Renderer.prototype.html = function(html) {
 		return html;
 	};
 	
-	Renderer.prototype.heading = function(text, level, raw, start, end) {
+	Renderer.prototype.heading = function(text, level, raw) {
 		return '<h'
 		+ level
 		+ ' id="'
 		+ this.options.headerPrefix
 		+ raw.toLowerCase().replace(/[^\w]+/g, '-')
-		+ '" class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">'
+		+ '">'
 		+ text
 		+ '</h'
 		+ level
 		+ '>\n';
 	};
 	
-	Renderer.prototype.hr = function(start, end) {
-		return this.options.xhtml ? '<hr class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '"/>\n' : '<hr class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">\n';
+	Renderer.prototype.hr = function() {
+		return this.options.xhtml ? '<hr/>\n' : '<hr>\n';
 	};
 	
-	Renderer.prototype.list = function(body, ordered, start, end) {
+	Renderer.prototype.list = function(body, ordered) {
 		var type = ordered ? 'ol' : 'ul';
-		return '<' + type + ' class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">\n' + body + '</' + type + '>\n';
+		return '<' + type + '>\n' + body + '</' + type + '>\n';
 	};
 	
-	Renderer.prototype.listitem = function(text, start, end) {
-		return '<li class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">' + text + '</li>\n';
+	Renderer.prototype.listitem = function(text) {
+		return '<li>' + text + '</li>\n';
 	};
 	
-	Renderer.prototype.paragraph = function(text, start, end) {
-		return '<p class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">' + text + '</p>\n';
+	Renderer.prototype.paragraph = function(text) {
+		return '<p>' + text + '</p>\n';
 	};
 	
-	Renderer.prototype.table = function(header, body, start, end) {
-		return '<table class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">\n'
+	Renderer.prototype.table = function(header, body) {
+		return '<table>\n'
 		+ '<thead>\n'
 		+ header
 		+ '</thead>\n'
@@ -954,49 +833,40 @@
 		+ '</table>\n';
 	};
 	
-	Renderer.prototype.tablerow = function(content, start, end) {
-		return '<tr class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">\n' + content + '</tr>\n';
+	Renderer.prototype.tablerow = function(content) {
+		return '<tr>\n' + content + '</tr>\n';
 	};
 	
-	Renderer.prototype.tablecell = function(content, flags, start, end) {
+	Renderer.prototype.tablecell = function(content, flags) {
 		var type = flags.header ? 'th' : 'td';
 		var tag = flags.align
-		? '<' + type + ' style="text-align:' + flags.align + '" class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">'
-		: '<' + type + ' class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">';
+		? '<' + type + ' style="text-align:' + flags.align + '">'
+		: '<' + type + '>';
 		return tag + content + '</' + type + '>\n';
 	};
 	
 	// span level renderer
-	Renderer.prototype.strong = function(text, start, end) {
-		return '<strong class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">' + text + '</strong>';
+	Renderer.prototype.strong = function(text) {
+		return '<strong>' + text + '</strong>';
 	};
 	
-	Renderer.prototype.em = function(text, start, end) {
-		return '<em class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">' + text + '</em>';
+	Renderer.prototype.em = function(text) {
+		return '<em>' + text + '</em>';
 	};
 	
-	Renderer.prototype.codespan = function(text, start, end) {
-		return '<code class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">' + text + '</code>';
+	Renderer.prototype.codespan = function(text) {
+		return '<code>' + text + '</code>';
 	};
 	
-	Renderer.prototype.br = function(start, end) {
-		return this.options.xhtml ? '<br class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '"/>' : '<br class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">';
+	Renderer.prototype.br = function() {
+		return this.options.xhtml ? '<br/>' : '<br>';
 	};
 	
-	Renderer.prototype.del = function(start, end) {
-		return '<del class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">' + text + '</del>';
+	Renderer.prototype.del = function(text) {
+		return '<del>' + text + '</del>';
 	};
 	
-	Renderer.prototype.link = function(href, title, text, start, end) {
+	Renderer.prototype.link = function(href, title, text) {
 		if (this.options.sanitize) {
 		try {
 			var prot = decodeURIComponent(unescape(href))
@@ -1013,23 +883,20 @@
 		if (title) {
 		out += ' title="' + title + '"';
 		}
-		out += ' class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">' + text + '</a>';
+		out += '>' + text + '</a>';
 		return out;
 	};
 	
-	Renderer.prototype.image = function(href, title, text, start, end) {
+	Renderer.prototype.image = function(href, title, text) {
 		var out = '<img src="' + href + '" alt="' + text + '"';
 		if (title) {
 		out += ' title="' + title + '"';
 		}
-		out += this.options.xhtml ? ' class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '"/>' : ' class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">';
+		out += this.options.xhtml ? '/>' : '>';
 		return out;
 	};
 	
-	Renderer.prototype.text = function(text, start, end) {
+	Renderer.prototype.text = function(text) {
 		return text;
 	};
 	
@@ -1111,20 +978,18 @@
 			return '';
 		}
 		case 'hr': {
-			return this.renderer.hr(this.token.start, this.token.end);
+			return this.renderer.hr();
 		}
 		case 'heading': {
 			return this.renderer.heading(
 			this.inline.output(this.token.text),
 			this.token.depth,
-			this.token.text,
-			this.token.start, this.token.end);
+			this.token.text);
 		}
 		case 'code': {
 			return this.renderer.code(this.token.text,
 			this.token.lang,
-			this.token.escaped,
-			this.token.start, this.token.end);
+			this.token.escaped);
 		}
 		case 'table': {
 			var header = ''
@@ -1159,7 +1024,7 @@
 	
 			body += this.renderer.tablerow(cell);
 			}
-			return this.renderer.table(header, body, this.token.start, this.token.end);
+			return this.renderer.table(header, body);
 		}
 		case 'blockquote_start': {
 			var body = '';
@@ -1168,10 +1033,9 @@
 			body += this.tok();
 			}
 	
-			return this.renderer.blockquote(body, this.token.start, this.token.end);
+			return this.renderer.blockquote(body);
 		}
 		case 'list_start': {
-			var start = this.token.start;
 			var body = ''
 			, ordered = this.token.ordered;
 	
@@ -1179,10 +1043,9 @@
 			body += this.tok();
 			}
 	
-			return this.renderer.list(body, ordered, start, this.token.end);
+			return this.renderer.list(body, ordered);
 		}
 		case 'list_item_start': {
-			var start = this.token.start;
 			var body = '';
 	
 			while (this.next().type !== 'list_item_end') {
@@ -1191,29 +1054,28 @@
 				: this.tok();
 			}
 	
-			return this.renderer.listitem(body, start, this.token.end);
+			return this.renderer.listitem(body);
 		}
 		case 'loose_item_start': {
-			var start = this.token.start;
 			var body = '';
 	
 			while (this.next().type !== 'list_item_end') {
 			body += this.tok();
 			}
 	
-			return this.renderer.listitem(body, start, this.token.end);
+			return this.renderer.listitem(body);
 		}
 		case 'html': {
 			var html = !this.token.pre && !this.options.pedantic
 			? this.inline.output(this.token.text)
 			: this.token.text;
-			return this.renderer.html(html, this.token.start, this.token.end);
+			return this.renderer.html(html);
 		}
 		case 'paragraph': {
-			return this.renderer.paragraph(this.inline.output(this.token.text), this.token.start, this.token.end);
+			return this.renderer.paragraph(this.inline.output(this.token.text));
 		}
 		case 'text': {
-			return this.renderer.paragraph(this.parseText(), this.token.start, this.token.end);
+			return this.renderer.paragraph(this.parseText());
 		}
 		}
 	};

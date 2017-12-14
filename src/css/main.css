@@ -171,3 +171,8 @@ input::-webkit-inner-spin-button{
 	padding: 0 !important;
 	margin: 0 !important;
 }
+
+#mdpreview .page .frame 
+.marked-elem-hover {
+	background-color: #a0c5e8;
+}

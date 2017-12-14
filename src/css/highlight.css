@@ -82,3 +82,11 @@
 	background-color: #fcfcfc;
 	color: inherit;
 }
+
+.frame pre code.rendering {
+	display: none;
+}
+
+.frame pre code:not(.rendering) + code.highlight-cache {
+	display: none;
+}

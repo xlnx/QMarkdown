@@ -1,20 +1,12 @@
 const { markdown } = require('markdown');
 const { ipcRenderer } = require('electron');
 
-// const pxpermm = $("#perm").width() / 1000;
-const renderers = [
-	function () {
-		// setTimeout(function(){
-			$('pre code').each(function(i, block) {
-				hljs.highlightBlock(block);
-			});
-		// }, 0);
-	}, function () {
-		// setTimeout(function(){
-			renderMathInElement($("#mdpreview").get(0));
-		// }, 0);
-	}
-]
+const editor = CodeMirror.fromTextArea($("#mdinput").get(0), {
+	lineNumbers: true,
+	lineWrapping: true,
+	styleActiveLine: true,
+	mode: "markdown"
+});
 
 const defaultConf = {
 	page: {
@@ -39,16 +31,15 @@ marked.setOptions({
 });
 
 let mdconverter = marked;//markdown.toHTML;
-let scrollPos;
 let fileState = [true, true];
 let fileContent = "";
 
 function md2html(md) {
-	let mds = md.split("$$");
-	for (let i = 1; i < mds.length; i += 2) {
-		mds[i] = mds[i].replace(/([\+\-\>#_])/g, "\\$1");
-	}
-	md = mds.join("$$");
+	// let mds = md.split("$$");
+	// for (let i = 1; i < mds.length; i += 2) {
+		// mds[i] = mds[i].replace(/([\+\-\>#_])/g, "\\$1");
+	// }
+	// md = mds.join("$$");
 	let html = '<div class="page"><div class="padding"><div class="frame">' + mdconverter(md) + '</div></div></div>';
 	html = html.replace(/<!--page-->/gi, '</div></div></div><div class="page"><div class="padding"><div class="frame">');
 	let v = html.match(/<!--style:([^-]+)-->/gi);
@@ -59,20 +50,49 @@ function md2html(md) {
 	if (v) for (x of v) {
 		html += '<script type="text/javascript" src="./flavour/custom/js/' + /<!--import:([^-]+)-->/gi.exec(x)[1] + '.js"/>';
 	}
+	// html = html.replace(/<!--::((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->((?:.|\n)*)<!---->/g);
 	return '<div class="qmarkdown-preview-frame">' + html + '</div>';
+}
+
+function asyncEach(o, f, b, e) {
+	!function () {
+		let obj = o, func = f, breaker = b, onEndLoop = e;
+		if (obj.length) {
+			(function asyncEachHelper(obj, iter, func) {
+				setTimeout(function () {
+					func(iter, obj[iter]);
+					if (iter + 1 != obj.length && (!breaker || !breaker())) {
+						asyncEachHelper(obj, iter + 1, func);
+					} else {
+						if (onEndLoop) {
+							onEndLoop();
+						}
+					}
+				}, 0);
+			}) (obj, 0, func);
+		} else {
+			if (onEndLoop) {
+				onEndLoop();
+			}
+		}
+	} ();
 }
 
 let renderer = {
 	occupied: false,
 	hangUp: false,
 	extra: false,
+	rendering: false,
+	confirm: true,
+	renderers: [],
+	cacheData: {},
 	timer: function () {
 		let self = this;
 		setTimeout(function () {
 			if (self.hangUp) {
 				self.hangUp = false;
 				self.extra = false;
-				self.render(false);
+				self.render();
 				self.timer();
 			} else {
 				if (self.extra) {
@@ -86,7 +106,13 @@ let renderer = {
 			}
 		}, 150)
 	},
+	stopRender: function () {
+		if (this.rendering) {
+			this.rendering = false;
+		}
+	},
 	toggle: function () {
+		this.stopRender();
 		// this.render(true);
 		if (this.occupied) {
 			this.hangUp = true;
@@ -96,15 +122,113 @@ let renderer = {
 			this.timer();
 		}
 	},
-	render: function (whole) {
-		$("#mdpreview").get(0).innerHTML = md2html($("#mdinput").val());
-		// console.log("as");
-		if (whole) {
-			for (let renderer of renderers) {
-				renderer();
-			}
+	cache: function (section, index, size) {
+		if (!this.cacheData[section]) {
+			this.cacheData[section] = []
 		}
-		$("#mdpreview").get(0).scrollTop = scrollPos;
+		if (index == this.cacheData[section].length) {
+			this.cacheData[section].push(size)
+		} else {
+			this.cacheData[section][index] = size;
+		}
+	},
+	readCache: function (section, index) {
+		if (!this.cacheData[section] || this.cacheData[section].length <= index) {
+			return undefined;
+		} else {
+			return this.cacheData[section][index];
+		}
+	},
+	generateRenderers: function() {
+		this.renderers = [];
+		let self = this;
+		$('#mdpreview .frame .katex-block:not(.katex-cache)').each(function(i, block) {
+			self.renderers.push(function (){
+				renderMathInElement(block);
+				$(block).removeClass("rendering");
+				// block.removeAttribute('style');
+				self.cache("katex-block", i, block)
+				// {
+				// 	width: $(block).find(".katex-display").width(), 
+				// 	height: $(block).find(".katex-display").height() + 2 * parseInt($(block).find(".katex-display").css("marginTop"))
+				// })
+				//$(block).find(".katex-html").height()
+			})
+		})
+		$('#mdpreview .frame .katex-inline-block:not(.katex-cache)').each(function(i, block) {
+			self.renderers.push(function (){
+				renderMathInElement(block);
+				$(block).removeClass("rendering");
+				// block.removeAttribute('style');
+				self.cache("katex-inline-block", i, block)
+				// 	width: $(block).width(), 
+				// 	height: $(block).height()
+				// })
+			})
+		})
+		$('#mdpreview .frame pre code').each(function(i, block) {
+			self.renderers.push(function (){
+				hljs.highlightBlock(block);
+				block.removeAttribute('style');
+				self.cache("code", i, {
+					width: $(block).width(), 
+					height: $(block).height()
+				})
+			})
+		})
+	},
+	preloadHtml: function (html) {
+		let self = this;
+		let dom = $(html);
+		dom.find('.frame .katex-block:not(.katex-cache)').each(function(i, block) {
+			let obj = self.readCache("katex-block", i);
+			if (obj) {
+				$(obj).addClass("katex-cache");
+				$(block).addClass("rendering");
+				$(block).after(obj);
+				// $(obj).prependTo(block);
+			}
+		})
+		dom.find('.frame .katex-inline-block:not(.katex-cache)').each(function(i, block) {
+			let obj = self.readCache("katex-inline-block", i);
+			if (obj) {
+				$(obj).addClass("katex-cache");
+				$(block).addClass("rendering");
+				$(block).after(obj);
+				// $(obj).prependTo(block)
+			}
+		})
+		dom.find('.frame pre code').each(function(i, block) {
+			let size = self.readCache("code", i);
+			if (size) {
+				block.setAttribute('style', 'width:' + size.width + 'px;height:' + size.height + 'px;display:block;overflow:hidden')
+			}
+		})
+		return dom;
+	},
+	render: function (whole) {
+		let self = this;
+		setTimeout(function () {
+			$("#mdpreview").html(self.preloadHtml(md2html(editor.getValue())));
+			if (whole) {
+				self.generateRenderers();
+				self.confirm = false;
+				self.rendering = true;
+				asyncEach(self.renderers, function (i, renderer) {
+					renderer();
+				}, function () {
+					if (!self.rendering) {
+						console.log("terminated");
+					}
+					return !self.rendering;
+				}, function () {
+					self.rendering = false;
+					self.confirm = true;
+				}/*, function () {
+					$("#mdpreview").get(0).scrollTop = scrollPos;
+				}*/);
+			}
+		}, 0);
 	}
 }
 
@@ -119,6 +243,12 @@ function renderPages() {
 	renderFile();
 	$("head style.paper-zoom").get(0).innerHTML = ".qmarkdown-preview-frame{transform: scale(" + e + "," + e + ")}";
 }
+
+// let scrollPos = 0;
+
+// function keepScrollPos() {
+// 	scrollPos = $("#mdpreview").get(0).scrollTop;
+// }
 
 function styleOnload(node, callback) {
 	// for IE6-9 and Opera
@@ -169,15 +299,6 @@ function poll(node, callback) {
 	}
 }
 
-function keepScrollPos() {
-	// if (scrollLock) {
-	// 	$("#mdpreview").get(0).scrollTop = scrollPos;
-	// 	console.log(scrollPos);
-	// } else {
-		scrollPos = $("#mdpreview").get(0).scrollTop;
-	// }
-}
-
 let sideBar = {
 	dom: $("div.side-bar").get(0),
 	showing: false,
@@ -188,7 +309,7 @@ let sideBar = {
 			$(this.dom).focus();
 		} else {
 			this.dom.style.left = "-" + this.width;
-			$("#mdinput").focus();
+			editor.focus();
 		}
 	}
 }
@@ -277,9 +398,9 @@ function bind(selector, key, options) {
 
 //  Event Listeners
 
-$("#mdinput").get(0).addEventListener('input', function () {
+editor.on("change", function (self, changeObj) {
 	renderFile();
-	fileState[0] = $("#mdinput").val() == fileContent;
+	fileState[0] = editor.getValue() == fileContent;
 });
 
 bind("#page-margin-top", "page.margin.top", {
@@ -321,15 +442,54 @@ bind("#page-margin-right", "page.margin.right", {
 		$("head style.page-padding-right").get(0).innerHTML =
 		  "div.page div.padding {padding-right:" + value + "cm} @page {margin-right:" + value + "cm}";
 		$("head style.print-padding").get(0).innerHTML = 
-		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.right"))) + "cm !important; box-sizing: border-box !important}}";
+		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.left"))) + "cm !important; box-sizing: border-box !important}}";
 		renderFile();
 	}
 });
 
+$("#mdpreview").click(function () {
+	let dom = $("#mdpreview .frame .marked-elem:hover");
+	if (dom) {
+		dom = $(dom.get(dom.length - 1));
+		let start = dom.attr("data-start"), end = dom.attr("data-end");
+		if (start && end) {
+			start = parseInt(start), end = parseInt(end);
+			let text = editor.getValue();
+			let text1 = text.substr(0, start);
+			let text2 = text.substr(0, end);
+			let s = text1.split('\n').length - 1;
+			let t = text2.split('\n').length - 1;
+			let s1 = s ? start - text1.lastIndexOf('\n') - 1 : start;
+			let t1 = t ? end - text2.lastIndexOf('\n') - 1 : end;
+			// $("#mdinput").get(0).setSelectionRange(, dom.attr("data-end"));
+			editor.setSelection({
+				line: t,
+				ch: t1
+			}, {
+				line: s,
+				ch: s1
+			})
+			editor.focus();
+		}
+	}
+})
+
+$("#mdpreview").mousemove(function () {
+	let v = $("#mdpreview .marked-elem:hover");
+	if (v.length) {
+		let s = $("#mdpreview .marked-elem-hover");
+		if (v[v.length - 1] != s[0]) {
+			s.removeClass("marked-elem-hover");
+			$(v[v.length - 1]).addClass("marked-elem-hover");
+		}
+	} else {
+		$("#mdpreview .marked-elem-hover").removeClass("marked-elem-hover");
+	}
+})
+
 $(function () {
-	$("#mdinput").focus();
+	editor.focus();
 	(window.onresize = renderPages)();
-	keepScrollPos();
 	configure.load(defaultConf);
 })
 
@@ -359,7 +519,7 @@ ipcRenderer.on('setAutoHeight', (event, arg) => {
 
 ipcRenderer.on('save', (event, arg, after) => {
 	fileState[0] = true, fileState[1] = true;
-	ipcRenderer.send('save', configure.dump() + $("#mdinput").val(), arg, after);
+	ipcRenderer.send('save', configure.dump() + editor.getValue(), arg, after);
 })
 
 ipcRenderer.on('exportHTML', (event, arg) => {
@@ -476,13 +636,13 @@ ipcRenderer.on('open', (event, arg) => {
 					if (conf) {
 						conf = JSON.parse(conf[0].match(/\|([^\|]*)\|/)[1]);
 						configure.load(conf);
-						$("#mdinput").val(file.replace(/^<!--\|[^\|]*\|-->[\n]/, ""));
+						editor.setValue(file.replace(/^<!--\|[^\|]*\|-->[\n]/, ""));
 						fileState = [true, true];
-						fileContent = $("#mdinput").val();
+						fileContent = editor.getValue();
 					} else {
-						$("#mdinput").val(file);
+						editor.setValue(file);
 						fileState = [true, false];
-						fileContent = $("#mdinput").val();
+						fileContent = editor.getValue();
 					}
 				} else {
 					throw xhr.status;
@@ -492,9 +652,9 @@ ipcRenderer.on('open', (event, arg) => {
 		xhr.send(null);
 	} else {
 		configure.load(defaultConf);
-		$("#mdinput").val("");
+		editor.setValue("");
 		fileState = [true, true];
-		fileContent = $("#mdinput").val();
+		fileContent = editor.getValue();
 	}
 	renderFile();
 })

@@ -319,7 +319,8 @@
 		B = /((^(<[^>]+>|\t|)+|(?:\n)))/gm,
 		R = "</span>",
 		L = {
-			classPrefix: "hljs-",
+			// classPrefix: "hljs-",
+			classPrefix: "",
 			tabReplace: null,
 			useBR: !1,
 			languages: void 0
@@ -1097,7 +1098,7 @@
 			}]
 		}
 	}), e.registerLanguage("java", function (e) {
-		var t = "[脌-矢a-zA-Z_$][脌-矢a-zA-Z_$0-9]*",
+		var t = "[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*",
 			r = t + "(<" + t + "(\\s*,\\s*" + t + ")*>)?",
 			a = "false synchronized int abstract float private char boolean static null if const for true while long strictfp finally protected import native final void enum else break transient catch instanceof byte super volatile case assert short package default double public try this switch continue throws protected public private module requires exports do",
 			n = "\\b(0[bB]([01]+[01_]+[01]+|[01]+)|0[xX]([a-fA-F0-9]+[a-fA-F0-9_]+[a-fA-F0-9]+|[a-fA-F0-9]+)|(([\\d]+[\\d_]+[\\d]+|[\\d]+)(\\.([\\d]+[\\d_]+[\\d]+|[\\d]+))?|\\.([\\d]+[\\d_]+[\\d]+|[\\d]+))([eE][-+]?\\d+)?)[lLfF]?",
@@ -1834,7 +1835,7 @@
 		}
 	}), e.registerLanguage("php", function (e) {
 		var t = {
-				b: "\\$+[a-zA-Z_-每][a-zA-Z0-9_-每]*"
+				b: "\\$+[a-zA-Z_-ÿ][a-zA-Z0-9_-ÿ]*"
 			},
 			r = {
 				cN: "meta",

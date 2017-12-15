@@ -5,7 +5,9 @@ const editor = CodeMirror.fromTextArea($("#mdinput").get(0), {
 	lineNumbers: true,
 	lineWrapping: true,
 	styleActiveLine: true,
-	mode: "markdown"
+	mode: "markdown",
+	foldGutter: true,
+	gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
 });
 
 const defaultConf = {

@@ -526,16 +526,16 @@
 		return type + tokenTypes.linkEmail;
 	  }
   
-	  if (modeCfg.xml && ch === '<' && stream.match(/^(!--|[a-z]+(?:\s+[a-z_:.\-]+(?:\s*=\s*[^ >]+)?)*\s*>)/i, false)) {
-		var end = stream.string.indexOf(">", stream.pos);
-		if (end != -1) {
-		  var atts = stream.string.substring(stream.start, end);
-		  if (/markdown\s*=\s*('|"){0,1}1('|"){0,1}/.test(atts)) state.md_inside = true;
-		}
-		stream.backUp(1);
-		state.htmlState = CodeMirror.startState(htmlMode);
-		return switchBlock(stream, state, htmlBlock);
-	  }
+	  // if (modeCfg.xml && ch === '<' && stream.match(/^(!--|[a-z]+(?:\s+[a-z_:.\-]+(?:\s*=\s*[^ >]+)?)*\s*>)/i, false)) {
+		// var end = stream.string.indexOf(">", stream.pos);
+		// if (end != -1) {
+		//   var atts = stream.string.substring(stream.start, end);
+		//   if (/markdown\s*=\s*('|"){0,1}1('|"){0,1}/.test(atts)) state.md_inside = true;
+		// }
+		// stream.backUp(1);
+		// state.htmlState = CodeMirror.startState(htmlMode);
+		// return switchBlock(stream, state, htmlBlock);
+	  // }
   
 	  if (modeCfg.xml && ch === '<' && stream.match(/^\/\w*?>/)) {
 		state.md_inside = false;

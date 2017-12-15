@@ -16,10 +16,37 @@
 	background-color: #d9d9d9;
 }
 
+@font-face {
+    font-family: 'PT Serif';
+    font-style: normal;
+    font-weight: normal;
+    src: local('PT Serif'), local('PTSerif-Regular'), url('./fonts/PT_Serif-Web-Regular.ttf');
+}
+@font-face {
+    font-family: 'PT Serif';
+    font-style: italic;
+    font-weight: normal;
+    src: local('PT Serif'), local('PTSerif-Italic'), url('./fonts/PT_Serif-Web-Italic.ttf')
+}
+
+@font-face {
+    font-family: 'PT Serif';
+    font-style: normal;
+    font-weight: bold;
+    src: local('PT Serif'), local('PTSerif-Bold'), url('./fonts/PT_Serif-Web-Bold.ttf')
+}
+
+@font-face {
+    font-family: 'PT Serif';
+    font-style: italic;
+    font-weight: bold;
+    src: local('PT Serif'), local('PTSerif-BoldItalic'), url('./fonts/PT_Serif-Web-BoldItalic.ttf')
+}
+
 .CodeMirror {
 	background: #f3f2ee;
 	line-height: 27.2px;
-	font-family: "PT Serif", 'Times New Roman', Times;
+	font-family: "PT Serif";
 	color: #1f0909;
 	font-size: 1.2rem;
 }
@@ -38,7 +65,7 @@
     margin-bottom: -32px;
     display: inline-block;
 	width: 44px;
-    min-width: 4ch !important;
+    /* min-width: 4ch !important; */
 }
 
 .CodeMirror-linenumber {
@@ -59,11 +86,11 @@
 
 .CodeMirror-gutter-wrapper {
     position: absolute !important;
-    left: -6ch !important;
+    /* left: -6ch !important; */
     min-width: 4ch !important;
     text-align: right;
     font-family: monospace;
-    font-size: 0.8rem;
+    /* font-size: 0.8rem; */
     margin-top: 0.10rem;
     display: inline-block;
     opacity: 0.6;

@@ -88,3 +88,41 @@
 .CodeMirror-activeline-background {
 	background: #ecebe8;
 }
+
+.cm-s-default .cm-header {
+    color: #d94f8a;
+}
+
+.cm-s-default .cm-header-1 {
+    font-size: 2.4rem;
+    line-height: 2.4rem;
+}
+
+.cm-s-default .cm-header-2 {
+    font-size: 2.2rem;
+    line-height: 2.2rem;
+}
+
+.cm-s-default .cm-header-6 {
+    font-size: 1.4rem;
+    line-height: 1.4rem;
+}
+
+.cm-s-default .cm-header-5 {
+    font-size: 1.6rem;
+    line-height: 1.6rem;
+}
+
+.cm-s-default .cm-header-4 {
+    font-size: 1.8rem;
+    line-height: 1.8rem;
+}
+
+.cm-s-default .cm-header-3 {
+    font-size: 2.0rem;
+    line-height: 2.0rem;
+}
+
+.cm-s-default .cm-variable-2 {
+    color: #000;
+}

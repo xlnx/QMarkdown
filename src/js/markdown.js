@@ -147,7 +147,20 @@
 	 * Lexing
 	 */
 	
-	Lexer.prototype.token = function(src, top, startPos, bq) {
+	Lexer.prototype.token = function(src, top, startPos, adj, bq) {
+		if (!adj) {
+			adj = function (x) {return x};
+		}
+		function seekReg(reg, inputStr) {
+			reg.lastIndex=0; let cap=[], idx=[];
+			while ((result = reg.exec(inputStr)) != null){
+			   cap.push(result[0]); 
+			   var fIndex=reg.firstIndex;
+			   var lIndex=reg.lastIndex-result[0].length;
+			   idx.push(lIndex);
+			} 
+			return [cap, idx];
+		}
 		var src = src.replace(/^ +$/gm, '')
 		, next
 		, loose
@@ -166,8 +179,8 @@
 			if (cap[0].length > 1) {
 			this.tokens.push({
 				type: 'space',
-				start: startPos,
-				end: startPos += cap[0].length
+				start: adj(startPos),
+				end: adj(startPos += cap[0].length)
 			});
 			} else {
 				startPos += cap[0].length;
@@ -183,8 +196,8 @@
 			text: !this.options.pedantic
 				? cap.replace(/\n+$/, '')
 				: cap,
-				start: startPos,
-				end: startPos += cap[0].length
+				start: adj(startPos),
+				end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
@@ -196,8 +209,8 @@
 			type: 'code',
 			lang: cap[2],
 			text: cap[3] || '',
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
@@ -209,8 +222,8 @@
 			type: 'heading',
 			depth: cap[1].length,
 			text: cap[2],
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
@@ -224,8 +237,8 @@
 			header: cap[1].replace(/^ *| *\| *$/g, '').split(/ *\| */),
 			align: cap[2].replace(/^ *|\| *$/g, '').split(/ *\| */),
 			cells: cap[3].replace(/\n$/, '').split('\n'),
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			};
 	
 			for (i = 0; i < item.align.length; i++) {
@@ -256,8 +269,8 @@
 			type: 'heading',
 			depth: cap[2] === '=' ? 1 : 2,
 			text: cap[1],
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
@@ -267,34 +280,69 @@
 			src = src.substring(cap[0].length);
 			this.tokens.push({
 			type: 'hr',
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
 	
 		// blockquote
 		if (cap = this.rules.blockquote.exec(src)) {
+			var caplen = cap[0].length;
 			src = src.substring(cap[0].length);
 	
 			this.tokens.push({
 			type: 'blockquote_start',
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos)
 			});
 	
-			cap = cap[0].replace(/^ *> ?/gm, '');
+			var reg = /^ *> ?/gm;
+			lo = seekReg(reg, cap[0]), acc = 0, adjust;
+			if (lo[0].length > 0) {
+				for (var id = 0; id < lo[0].length - 1; ++id) {
+					acc += lo[0][id].length;
+					lo[1][id + 1] -= acc;
+					lo[0][id] = acc;
+				}
+				lo[0][lo[0].length - 1] = acc + lo[0][lo[0].length - 1].length;
+				lo[1].push(Infinity);
+				adjust = function (lo) {
+					return function (index) {
+						var i = 0, j = lo[1].length - 1, mid;
+						if (index >= lo[1][0]) {
+							// lo[1][i] <= index < lo[1][i+1]
+							while (i + 1 < j) {
+								mid = parseInt((i+j)/2);
+								if (lo[1][mid] <= index) {
+									i = mid;
+								} else {
+									j = mid;
+								}
+							}
+							return adj(index + lo[0][i]);
+						} else {
+							return adj(index);
+						}
+					}
+				} (lo);
+				cap = cap[0].replace(/^ *> ?/gm, '');
+				
+				for (var id = 0; id < lo[1].length - 1; ++id) {
+					lo[1][id] += startPos;
+				}
+			}
 			// cap.startPos = startPos;
 	
 			// Pass `top` to keep the current
 			// "toplevel" state. This is exactly
 			// how markdown.pl works.
-			this.token(cap, top, true);
+			this.token(cap, top, startPos, adjust ? adjust : adj, true);
 	
 			this.tokens.push({
 			type: 'blockquote_end',
-			start: startPos,
-			end: startPos
+			start: adj(startPos += caplen),
+			end: adj(startPos)
 			});
 	
 			continue;
@@ -309,23 +357,17 @@
 			let tok = {
 				type: 'list_start',
 				ordered: bull.length > 1,
-				start: startPos,
-				end: startPos += cap[0].length
+				start: adj(startPos),
+				end: adj(startPos += cap[0].length)
 			}
 			this.tokens.push(tok);
 	
 			// Get each top-level item.
-			let o = (function (reg, inputStr){
-				reg.lastIndex=0; let cap=[], idx=[];
-				while ((result = reg.exec(inputStr)) != null){
-				   cap.push(result[0]); 
-				   var fIndex=reg.firstIndex;
-				   var lIndex=reg.lastIndex-result[0].length;
-				   idx.push(lIndex + start);
-				} 
-				return [cap, idx];
-			}) (this.rules.item, cap[0]);
-			let positions = o[1];
+			var o = seekReg(this.rules.item, cap[0]);
+			var positions = o[1];
+			for (i = 0; i < positions.length; ++i) {
+				positions[i] += start;
+			}
 			cap = o[0];//cap[0].match(this.rules.item);
 	
 			next = false;
@@ -344,11 +386,48 @@
 	
 			// Outdent whatever the
 			// list item contains. Hacky.
+			var adjust, lo, offset;
 			if (~item.indexOf('\n ')) {
 				space -= item.length;
-				item = !this.options.pedantic
-				? item.replace(new RegExp('^ {1,' + space + '}', 'gm'), '')
-				: item.replace(/^ {1,4}/gm, '');
+				var reg = !this.options.pedantic ? new RegExp('^ {1,' + space + '}', 'gm') : /^ {1,4}/gm;
+				lo = seekReg(reg, item), acc = 0;
+				if (lo[0].length > 0) {
+					for (var id = 0; id < lo[0].length - 1; ++id) {
+						acc += lo[0][id].length;
+						lo[1][id + 1] -= acc;
+						lo[0][id] = acc;
+					}
+					lo[0][lo[0].length - 1] = acc + lo[0][lo[0].length - 1].length;
+					lo[1].push(Infinity);
+					adjust = function (lo) {
+						return function (index) {
+							var i = 0, j = lo[1].length - 1, mid;
+							if (index >= lo[1][0]) {
+								// lo[1][i] <= index < lo[1][i+1]
+								while (i + 1 < j) {
+									mid = parseInt((i+j)/2);
+									if (lo[1][mid] <= index) {
+										i = mid;
+									} else {
+										j = mid;
+									}
+								}
+								return adj(index + lo[0][i]);
+							} else {
+								return adj(index);
+							}
+						}
+					} (lo);
+					item = item.replace(reg, '');
+					
+					pos -= item.length + (offset = lo[0][lo[0].length - 1]);
+					for (var id = 0; id < lo[1].length - 1; ++id) {
+						lo[1][id] += pos;
+					}
+				}
+			} else {
+				pos -= item.length;
+				offset = 0;
 			}
 	
 			// Determine whether the next list item belongs here.
@@ -363,7 +442,7 @@
 				i = l - 1;
 				}
 			}
-	
+			
 			// Determine whether item is loose or not.
 			// Use: /(^|\n)(?! )[^\n]+\n\n(?!\s*$)/
 			// for discount behavior.
@@ -372,31 +451,29 @@
 				next = item.charAt(item.length - 1) === '\n';
 				if (!loose) loose = next;
 			}
-	
-			pos -= item.length;
-
+			
 			this.tokens.push({
 				type: loose
 				? 'loose_item_start'
 				: 'list_item_start',
-				start: pos,
-				end: pos + item.length
+				start: adj(pos),
+				end: adj(pos + item.length + offset)
 			});
-	
+
 			// Recurse.
-			this.token(item, false, pos, bq);
+			this.token(item, false, pos, adjust ? adjust : adj, bq);
 	
 			this.tokens.push({
 				type: 'list_item_end',
-				start: pos,
-				end: pos + item.length
+				start: adj(pos),
+				end: adj(pos + item.length + offset)
 			});
 			}
 	
 			this.tokens.push({
 			type: 'list_end',
-			start: startPos,
-			end: startPos
+			start: adj(startPos),
+			end: adj(startPos)
 			});
 	
 			continue;
@@ -412,8 +489,8 @@
 			pre: !this.options.sanitizer
 				&& (cap[1] === 'pre' || cap[1] === 'script' || cap[1] === 'style'),
 			text: cap[0],
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
@@ -437,8 +514,8 @@
 			header: cap[1].replace(/^ *| *\| *$/g, '').split(/ *\| */),
 			align: cap[2].replace(/^ *|\| *$/g, '').split(/ *\| */),
 			cells: cap[3].replace(/(?: *\| *)?\n$/, '').split('\n'),
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			};
 	
 			for (i = 0; i < item.align.length; i++) {
@@ -472,8 +549,8 @@
 			text: cap[1].charAt(cap[1].length - 1) === '\n'
 				? cap[1].slice(0, -1)
 				: cap[1],
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
@@ -485,8 +562,8 @@
 			this.tokens.push({
 			type: 'text',
 			text: cap[0],
-			start: startPos,
-			end: startPos += cap[0].length
+			start: adj(startPos),
+			end: adj(startPos += cap[0].length)
 			});
 			continue;
 		}
@@ -613,16 +690,16 @@
 	 * Static Lexing/Compiling Method
 	 */
 	
-	InlineLexer.output = function(src, links, options) {
+	InlineLexer.output = function(src, startPos, links, options) {
 		var inline = new InlineLexer(links, options);
-		return inline.output(src);
+		return inline.output(src, startPos);
 	};
 	
 	/**
 	 * Lexing/Compiling
 	 */
 	
-	InlineLexer.prototype.output = function(src) {
+	InlineLexer.prototype.output = function(src, startPos) {
 		var out = ''
 		, link
 		, text
@@ -632,6 +709,7 @@
 		while (src) {
 		// escape
 		if (cap = this.rules.escape.exec(src)) {
+			startPos += cap[0].length;
 			src = src.substring(cap[0].length);
 			out += cap[1];
 			continue;
@@ -649,7 +727,7 @@
 			text = escape(cap[1]);
 			href = text;
 			}
-			out += this.renderer.link(href, null, text);
+			out += this.renderer.link(href, null, text, startPos, startPos += cap[0].length);
 			continue;
 		}
 	
@@ -658,14 +736,14 @@
 			src = src.substring(cap[0].length);
 			text = escape(cap[1]);
 			href = text;
-			out += this.renderer.link(href, null, text);
+			out += this.renderer.link(href, null, text, startPos, startPos += cap[0].length);
 			continue;
 		}
 		
 		//qtag
 		if (cap = this.rules.qtag.exec(src)) {
 			src= src.substring(cap[0].length);
-			out += this.renderer.qtag(cap[1], cap[2]);
+			out += this.renderer.qtag(cap[1], cap[2], startPos, startPos += cap[0].length);
 			continue;
 		}
 
@@ -717,56 +795,56 @@
 		// strong
 		if (cap = this.rules.strong.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.strong(this.output(cap[2] || cap[1]));
+			out += this.renderer.strong(this.output(cap[2] || cap[1], startPos + 2), startPos, startPos += cap[0].length);
 			continue;
 		}
 	
 		// em
 		if (cap = this.rules.em.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.em(this.output(cap[2] || cap[1]));
+			out += this.renderer.em(this.output(cap[2] || cap[1], startPos + 1), startPos, startPos += cap[0].length);
 			continue;
 		}
 	
 		// code
 		if (cap = this.rules.code.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.codespan(escape(cap[2], true));
+			out += this.renderer.codespan(escape(cap[2], true), startPos, startPos += cap[0].length);
 			continue;
 		}
 	
 		// br
 		if (cap = this.rules.br.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.br();
+			out += this.renderer.br(startPos, startPos += cap[0].length);
 			continue;
 		}
 	
 		// del (gfm)
 		if (cap = this.rules.del.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.del(this.output(cap[1]));
+			out += this.renderer.del(this.output(cap[1], startPos), startPos, startPos += cap[0].length);
 			continue;
 		}
 
 		// inlinekatex
 		if (cap = this.rules.inlinekatex.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.inlinekatex(cap[1]);
+			out += this.renderer.inlinekatex(cap[1], startPos, startPos += cap[0].length);
 			continue;
 		}
 
 		//katex
 		if (cap = this.rules.katex.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.katex(cap[1]);
+			out += this.renderer.katex(cap[1], startPos, startPos += cap[0].length);
 			continue;
 		}
 	
 		// text
 		if (cap = this.rules.text.exec(src)) {
 			src = src.substring(cap[0].length);
-			out += this.renderer.text(escape(this.smartypants(cap[0])));
+			out += this.renderer.text(escape(this.smartypants(cap[0])), startPos, startPos += cap[0].length);
 			continue;
 		}
 	
@@ -872,10 +950,10 @@
 
 	//katex
 	Renderer.prototype.katex = function(text, start, end) {
-		return '<span class="katex-block marked-elem" data-start="' 
+		return '<div class="katex-block marked-elem" style="display: block" data-start="' 
 		+ start + '" data-end="' + end + '">$$'
 		+ text
-		+ '$$</span>';
+		+ '$$</div>';
 	};
 
 	Renderer.prototype.inlinekatex = function(text, start, end) {
@@ -1092,13 +1170,14 @@
 	 */
 	
 	Parser.prototype.parseText = function() {
+		var start = this.token.start;
 		var body = this.token.text;
 	
 		while (this.peek().type === 'text') {
 		body += '\n' + this.next().text;
 		}
 	
-		return this.inline.output(body);
+		return this.inline.output(body, start);
 	};
 	
 	/**
@@ -1115,7 +1194,7 @@
 		}
 		case 'heading': {
 			return this.renderer.heading(
-			this.inline.output(this.token.text),
+			this.inline.output(this.token.text, this.token.start),
 			this.token.depth,
 			this.token.text,
 			this.token.start, this.token.end);
@@ -1140,7 +1219,7 @@
 			for (i = 0; i < this.token.header.length; i++) {
 			flags = { header: true, align: this.token.align[i] };
 			cell += this.renderer.tablecell(
-				this.inline.output(this.token.header[i]),
+				this.inline.output(this.token.header[i], this.token.start),
 				{ header: true, align: this.token.align[i] }
 			);
 			}
@@ -1152,7 +1231,7 @@
 			cell = '';
 			for (j = 0; j < row.length; j++) {
 				cell += this.renderer.tablecell(
-				this.inline.output(row[j]),
+				this.inline.output(row[j], this.token.start),
 				{ header: false, align: this.token.align[j] }
 				);
 			}
@@ -1162,13 +1241,14 @@
 			return this.renderer.table(header, body, this.token.start, this.token.end);
 		}
 		case 'blockquote_start': {
+			var start = this.token.start;
 			var body = '';
 	
 			while (this.next().type !== 'blockquote_end') {
 			body += this.tok();
 			}
 	
-			return this.renderer.blockquote(body, this.token.start, this.token.end);
+			return this.renderer.blockquote(body, start, this.token.end);
 		}
 		case 'list_start': {
 			var start = this.token.start;
@@ -1205,12 +1285,12 @@
 		}
 		case 'html': {
 			var html = !this.token.pre && !this.options.pedantic
-			? this.inline.output(this.token.text)
+			? this.inline.output(this.token.text, this.token.start)
 			: this.token.text;
 			return this.renderer.html(html, this.token.start, this.token.end);
 		}
 		case 'paragraph': {
-			return this.renderer.paragraph(this.inline.output(this.token.text), this.token.start, this.token.end);
+			return this.renderer.paragraph(this.inline.output(this.token.text, this.token.start), this.token.start, this.token.end);
 		}
 		case 'text': {
 			return this.renderer.paragraph(this.parseText(), this.token.start, this.token.end);

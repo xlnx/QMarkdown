@@ -181,7 +181,24 @@ let renderer = {
 	},
 	preloadHtml: function (html) {
 		let self = this;
-		let dom = $(html);
+		function modClass(x) {
+			var u = [];
+			x = x.split(/<!--qtag-begin\|((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->([\s\S]*?)<!--qtag-end-->/g);
+			for (var i = 1; i < x.length; i += 3) {
+				var y = $('<div></div>');
+				y.html(x[i + 1]);
+				y.children().addClass(x[i]);
+				u.push(y);
+				x[i + 1] = '<div class="QMarkdown-preload-HTML-to-replace"></div>';
+				x[i] = "";
+			}
+			var y = $(x.join(""));
+			y.find("div.QMarkdown-preload-HTML-to-replace").each(function (i) {
+				$(this).replaceWith(u[i].children());
+			});
+			return y;
+		}
+		let dom = modClass(html);
 		dom.find('.frame .katex-block:not(.katex-cache)').each(function(i, block) {
 			let obj = self.readCache("katex-block", i);
 			if (obj) {
@@ -316,11 +333,36 @@ let sideBar = {
 	}
 }
 
+function cacheBase64Image(url, callback, outputFormat){
+	var canvas = document.createElement('CANVAS'),
+	  ctx = canvas.getContext('2d'),
+	  img = new Image;
+	img.crossOrigin = 'Anonymous';
+	img.onload = function(){
+		canvas.height = img.height;
+		canvas.width = img.width;
+		ctx.drawImage(img,0,0);
+		var dataURL = canvas.toDataURL(outputFormat || 'image/png');
+		callback.call(this, dataURL);
+		canvas = null; 
+	};
+	img.src = url;
+}
+
 let configure = {
 	data: {},
 	lock: {},
 	setter: {},
+	images: [],
 	dump: function () {
+		console.log(this.images);
+		for (x in this.data) {
+			if (x[0] == '$') {
+				if (!~this.images.indexOf(x)) {
+					delete this.data[x];
+				}
+			}
+		}
 		return "<!--|" + JSON.stringify(this.data) + "|-->\n";
 	},
 	set: function (key, val) {
@@ -333,7 +375,9 @@ let configure = {
 			}
 			origin = origin[x];
 		}
-		this.setter[key](val, origin[k]);
+		if (this.setter[key]) {
+			this.setter[key](val, origin[k]);
+		}
 		origin[k] = val;
 	},
 	get: function (key) {
@@ -350,15 +394,48 @@ let configure = {
 	},
 	load: function(conf) {
 		let self = this;
+		this.images = [];
 		(function iter(keys, conf) {
 			for (x in conf) {
 				if (typeof conf[x] == "object" && !(conf[x] instanceof Array)) {
 					iter((keys ? keys + "." : "") + x, conf[x]);
 				} else {
-					self.set((keys ? keys + "." : "") + x, conf[x])
+					if (x[0] != '$') {
+						self.set((keys ? keys + "." : "") + x, conf[x]);
+					} else {
+						self.setImage((keys ? keys + "." : "") + x, conf[x]);
+					}
 				}
 			}
 		}) ("", conf);
+	},
+	reloadImageList: function() {
+		this.images = [];
+	},
+	getNextImageIndex: function() {
+		for (var i = 0; i != 65536; ++i) {
+			if (!~this.images.indexOf('$' + i)) {
+				return '$' + i;
+			}
+		}
+		return '$';
+	},
+	setImage: function(key, val) {
+		let self = this;
+		cacheBase64Image(val, function (base64URL) {
+			self.set(key, base64URL);
+		});
+	},
+	getImage: function(href) {
+		let h = this.get(href);
+		if (h) {
+			if (!~this.images.indexOf(href)) {
+				this.images.push(href);
+			}
+			return h;
+		} else {
+			return "";
+		}
 	}
 }
 
@@ -667,4 +744,25 @@ ipcRenderer.on('toggleSideBar', () => {
 
 ipcRenderer.on('checkFileState', (event, arg) => {
 	ipcRenderer.send('checkFileState', arg, fileState);
+})
+
+function base64Image(img, callback) {
+	var xhr = new XMLHttpRequest(); 
+	img = "file:///" + img;
+	xhr.responseType = 'blob'; 
+	xhr.onload = function () {
+		r = new FileReader();
+		r.onload = function(){
+			callback(r.result);
+		}
+		r.readAsDataURL(xhr.response);
+	}
+	xhr.open('GET', img, true);
+	xhr.send();
+}
+
+ipcRenderer.on('insertImage', (event, arg) => {
+	base64Image(arg, function(base64) {
+		configure.setImage(configure.getNextImageIndex(), base64);
+	})
 })

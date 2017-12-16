@@ -595,13 +595,19 @@
 		br: /^ {2,}\n(?!\s*$)/,
 		del: noop,
 		text: /^[\s\S]+?(?=\$\$|[\\<!\[_*`]| {2,}\n|$)/,
-		//qtag
-		qtag: /^<!--:([:><\+\|\.]*)((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->/
+		//qtagbegin
+		qtagbegin: /^\s*\[(inside)\]\s*\{/, 
+		//qtagend
+		qtagend: /^\s*\}/, 
 	};
 	
 	inline._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;
 	inline._href = /\s*<?([\s\S]*?)>?(?:\s+['"]([\s\S]*?)['"])?\s*/;
 	
+	inline.qtagbegin = replace(inline.qtagbegin)
+		('inside', inline._inside)
+		();
+
 	inline.link = replace(inline.link)
 		('inside', inline._inside)
 		('href', inline._href)
@@ -740,10 +746,17 @@
 			continue;
 		}
 		
-		//qtag
-		if (cap = this.rules.qtag.exec(src)) {
+		//qtagbegin
+		if (cap = this.rules.qtagbegin.exec(src)) {
 			src= src.substring(cap[0].length);
-			out += this.renderer.qtag(cap[1], cap[2], startPos, startPos += cap[0].length);
+			out += this.renderer.qtagbegin(cap[1], startPos, startPos += cap[0].length);
+			continue;
+		}
+
+		//qtagend
+		if (cap = this.rules.qtagend.exec(src)) {
+			src= src.substring(cap[0].length);
+			out += this.renderer.qtagend(startPos, startPos += cap[0].length);
 			continue;
 		}
 
@@ -860,7 +873,7 @@
 	/**
 	 * Compile Link
 	 */
-	
+	//TODO
 	InlineLexer.prototype.outputLink = function(cap, link) {
 		var href = escape(link.href)
 		, title = link.title ? escape(link.title) : null;
@@ -968,16 +981,14 @@
 		+ start + '" data-end="' + end + '">\n' + quote + '</blockquote>\n';
 	};
 	
-	//qtag
-	Renderer.prototype.qtag = function(category, classes, start, end) {
-		var tag = "";
-		var close = category[category.length - 1] == ".";
-		switch (category) {
-			case ":": tag = "div"; break;
-			default: tag = "span"; break;
-		}
-		return "<" + (close?"/":"") + tag + ' class="' + classes + ' marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '">';
+	//qtagbegin
+	Renderer.prototype.qtagbegin = function(classes, start, end) {
+		return '<!--qtag-begin|' + classes + '-->';
+	}
+
+	//qtagend
+	Renderer.prototype.qtagend = function(start, end) {
+		return '<!--qtag-end-->';
 	}
 
 	Renderer.prototype.html = function(html, start, end) {
@@ -1097,6 +1108,7 @@
 	};
 	
 	Renderer.prototype.image = function(href, title, text, start, end) {
+		href = href[0] == '$' ? configure.getImage(href) : href;
 		var out = '<img src="' + href + '" alt="' + text + '"';
 		if (title) {
 		out += ' title="' + title + '"';
@@ -1363,6 +1375,8 @@
 	 */
 	
 	function marked(src, opt, callback) {
+		configure.reloadImageList();
+
 		if (callback || typeof opt === 'function') {
 		if (!callback) {
 			callback = opt;

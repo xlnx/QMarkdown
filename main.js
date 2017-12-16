@@ -160,6 +160,27 @@ let template = [
     type: "separator"
   }]
 }, {
+  label: '&Element',
+  submenu: [{
+    label: '&Image',
+    accelerator: 'CmdOrCtrl+I',
+    click: function (item) {
+      dialog.showOpenDialog({
+        properties: ['Insert image'],
+        filters: [{
+          name: 'Image', extensions: ['jpg', 'jpeg', 'gif', 'png', 'svg', 'bmp', 'ico']
+        }]
+      }, function (files) {
+        if (files && files.length > 0) {
+          files = files[0]
+          if (files) {
+            mainWindow.webContents.send('insertImage', files);
+          }
+        }
+      })
+    }
+  }]
+}, {
   label: '&View',
   submenu: [{
     label: 'Toggle &Fullscreen',
@@ -193,7 +214,7 @@ let template = [
 }]
 
 if (debug) {
-  template[4].submenu.push({
+  template[5].submenu.push({
     label: '&Reload',
     accelerator: 'CmdOrCtrl+R',
     click: function (item, focusedWindow) {

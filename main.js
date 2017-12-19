@@ -490,6 +490,7 @@ function createWindow () {
   }))
 
   mainWindow.on('closed', function () {
+    // mainWindow.webContents.send('checkFileState', 'close')
     mainWindow = null
   })
 }

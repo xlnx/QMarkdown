@@ -20,11 +20,16 @@
 		lheading: /^([^\n]+)\n *(=|-){2,} *(?:\n+|$)/,
 		blockquote: /^( *>[^\n]+(\n(?!def)[^\n]+)*\n*)+/,
 		list: /^( *)(bull) [\s\S]+?(?:hr|def|\n{2,}(?! )(?!\1bull )\n*|\s*$)/,
+		// html: /^ *(?:comment *(?:\n|\s*$)|closed *(?:\n{2,}|\s*$)|closing *(?:\n{1,}|\s*$))/,
 		html: /^ *(?:comment *(?:\n|\s*$)|closed *(?:\n{2,}|\s*$)|closing *(?:\n{2,}|\s*$))/,
 		def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +["(]([^\n]+)[")])? *(?:\n+|$)/,
 		table: noop,
-		paragraph: /^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def))+)\n*/,
-		text: /^[^\n]+/
+		paragraph: /^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def|qtagbegin|qtagend))+)\n*/,
+		text: /^[^\n]+/,
+		//qtagbegin
+		qtagbegin: /^ *\[((?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*)\]\s*\{\s*\n/, 
+		//qtagend
+		qtagend: /^ *\}\s*\n/, 
 	};
 	
 	block.bullet = /(?:[*+-]|\d+\.)/;
@@ -62,6 +67,8 @@
 		('blockquote', block.blockquote)
 		('tag', '<' + block._tag)
 		('def', block.def)
+		('qtagbegin', block.qtagbegin)
+		('qtagend', block.qtagend)
 		();
 	
 	/**
@@ -347,7 +354,28 @@
 	
 			continue;
 		}
-	
+		
+		if (cap = this.rules.qtagbegin.exec(src)) {
+			src = src.substr(cap[0].length);
+			this.tokens.push({
+				type: 'qtagbegin',
+				classes: cap[1],
+				start: startPos,
+				end: startPos += cap[0].length
+			});
+			continue;
+		}
+
+		if (cap = this.rules.qtagend.exec(src)) {
+			src = src.substr(cap[0].length);
+			this.tokens.push({
+				type: 'qtagend',
+				start: startPos,
+				end: startPos += cap[0].length
+			});
+			continue;
+		}
+
 		// list
 		if (cap = this.rules.list.exec(src)) {
 			var start = startPos, pos;
@@ -594,7 +622,7 @@
 		code: /^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,
 		br: /^ {2,}\n(?!\s*$)/,
 		del: noop,
-		text: /^[\s\S]+?(?=\$\$|[\\<!\[_*`]| {2,}\n|$)/,
+		text: /^[\s\S]+?(?=\$\$|\}|[\\<!\[_*`]| {2,}\n|$)/,
 		//qtagbegin
 		qtagbegin: /^\s*\[(inside)\]\s*\{/, 
 		//qtagend
@@ -961,6 +989,14 @@
 		+ '\n</code></pre>\n';
 	};
 
+	Renderer.prototype.qtagbegin = function(classes, start, end) {
+		return '<!--qtag-begin|' + classes + '-->';
+	}
+
+	Renderer.prototype.qtagend = function(start, end) {
+		return '<!--qtag-end-->';
+	}
+
 	//katex
 	Renderer.prototype.katex = function(text, start, end) {
 		return '<div class="katex-block marked-elem" style="display: block" data-start="' 
@@ -1261,6 +1297,12 @@
 			}
 	
 			return this.renderer.blockquote(body, start, this.token.end);
+		}
+		case 'qtagbegin': {
+			return this.renderer.qtagbegin(this.token.classes, this.token.start, this.token.end);
+		}
+		case 'qtagend': {
+			return this.renderer.qtagend(this.token.start, this.token.end);
 		}
 		case 'list_start': {
 			var start = this.token.start;

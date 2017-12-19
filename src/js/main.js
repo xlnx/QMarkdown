@@ -1,4 +1,3 @@
-const { markdown } = require('markdown');
 const { ipcRenderer } = require('electron');
 
 const editor = CodeMirror.fromTextArea($("#mdinput").get(0), {
@@ -182,21 +181,25 @@ let renderer = {
 	preloadHtml: function (html) {
 		let self = this;
 		function modClass(x) {
-			var u = [];
-			x = x.split(/<!--qtag-begin\|((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->([\s\S]*?)<!--qtag-end-->/g);
-			for (var i = 1; i < x.length; i += 3) {
-				var y = $('<div></div>');
-				y.html(x[i + 1]);
-				y.children().addClass(x[i]);
-				u.push(y);
-				x[i + 1] = '<div class="QMarkdown-preload-HTML-to-replace"></div>';
-				x[i] = "";
+			x = x.split(/(<!--qtag-begin\|(?:(?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->|<!--qtag-end-->)/g);
+			var l = [x[0]], br = [], cr;
+			for (let i = 1; i < x.length; i += 2) {
+				let cap;
+				if (cap = /^<!--qtag-begin\|((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->/.exec(x[i])) {
+					br.push(cap[1]);
+					l.push(x[i + 1]);
+				} else {
+					if (l.length == 1) {
+						l[l.length - 1] += x[i + 1];
+					} else {
+						let y = $('<div></div>');
+						y.html(l.pop());
+						y.children().addClass(br.pop());
+						l[l.length - 1] += y.html() + x[i + 1];
+					}
+				}
 			}
-			var y = $(x.join(""));
-			y.find("div.QMarkdown-preload-HTML-to-replace").each(function (i) {
-				$(this).replaceWith(u[i].children());
-			});
-			return y;
+			return $(l[0]);
 		}
 		let dom = modClass(html);
 		dom.find('.frame .katex-block:not(.katex-cache)').each(function(i, block) {
@@ -355,7 +358,7 @@ let configure = {
 	setter: {},
 	images: [],
 	dump: function () {
-		console.log(this.images);
+		// console.log(this.images);
 		for (x in this.data) {
 			if (x[0] == '$') {
 				if (!~this.images.indexOf(x)) {
@@ -735,6 +738,7 @@ ipcRenderer.on('open', (event, arg) => {
 		fileState = [true, true];
 		fileContent = editor.getValue();
 	}
+	editor.clearHistory()
 	renderFile();
 })
 
@@ -763,6 +767,8 @@ function base64Image(img, callback) {
 
 ipcRenderer.on('insertImage', (event, arg) => {
 	base64Image(arg, function(base64) {
-		configure.setImage(configure.getNextImageIndex(), base64);
+		let ix = configure.getNextImageIndex();
+		configure.setImage(ix, base64);
+		editor.replaceSelections(['![](' + ix + ')'])
 	})
 })

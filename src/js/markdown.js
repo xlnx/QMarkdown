@@ -29,7 +29,7 @@
 		//qtagbegin
 		qtagbegin: /^ *\[((?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*)\]\s*\{\s*\n/, 
 		//qtagend
-		qtagend: /^ *\}\s*\n/, 
+		qtagend: /^ *\}\s*[\n$]/, 
 	};
 	
 	block.bullet = /(?:[*+-]|\d+\.)/;

@@ -6,7 +6,18 @@ const editor = CodeMirror.fromTextArea($("#mdinput").get(0), {
 	styleActiveLine: true,
 	mode: "markdown",
 	foldGutter: true,
-	gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"]
+	gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+	indentUnit: 4,
+	smartIndent: true,
+	extraKeys: {
+		Tab: function () {
+			if (editor.somethingSelected()) {
+				editor.indentSelection('add');
+			} else {
+				editor.replaceSelection(editor.getOption() ? "\t" : Array(editor.getOption("indentUnit") + 1).join(" "), "end", "+input");
+			}
+		}
+	}
 });
 
 const defaultConf = {

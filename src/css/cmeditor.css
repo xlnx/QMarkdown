@@ -43,6 +43,20 @@
     src: local('PT Serif'), local('PTSerif-BoldItalic'), url('./fonts/PT_Serif-Web-BoldItalic.ttf')
 }
 
+@font-face {
+    font-family: 'Fira Code';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Fira Code'), local('FiraCode-Regular'), url('./fonts/FiraCode-Regular.ttf');
+}
+
+@font-face {
+    font-family: 'Fira Code';
+    font-style: normal;
+    font-weight: bold;
+    src: local('Fira Code'), local('FiraCode-Bold'), url('./fonts/FiraCode-Bold.ttf')
+}
+
 .CodeMirror {
 	background: #f3f2ee;
 	line-height: 27.2px;

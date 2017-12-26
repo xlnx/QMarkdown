@@ -203,6 +203,10 @@ body {
 	background: rgba(204,204,204,0.2);
 }
 
+.cm-comment {
+	font-family: 'Fira Code';
+}
+
 @media print {
 	body > div:not(.preview-mode), 
 	body > div.preview-mode > div:not(.preview) {

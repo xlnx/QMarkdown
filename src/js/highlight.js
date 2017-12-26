@@ -319,8 +319,8 @@
 		B = /((^(<[^>]+>|\t|)+|(?:\n)))/gm,
 		R = "</span>",
 		L = {
-			// classPrefix: "hljs-",
-			classPrefix: "",
+			classPrefix: "hljs-",
+			// classPrefix: "",
 			tabReplace: null,
 			useBR: !1,
 			languages: void 0

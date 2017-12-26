@@ -1,0 +1,7 @@
+.CodeMirror-code > div:not(.CodeMirror-activeline) {
+	opacity: 0.25;
+}
+
+.CodeMirror-lines > div > div:not(.CodeMirror-code):not(.CodeMirror-measure) {
+	z-index: 0 !important;
+}

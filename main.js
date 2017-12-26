@@ -196,6 +196,22 @@ let template = [
         focusedWindow.setFullScreen(!focusedWindow.isFullScreen())
       }
     }
+  }, {
+    type: 'checkbox',
+    label: 'Show &Preview',
+    accelerator: 'CmdOrCtrl+F10',
+    checked: true,
+    click: function (item) {
+      mainWindow.webContents.send('showPreview', item.checked)
+    }
+  }, {
+    type: 'checkbox',
+    label: '&Immersion',
+    accelerator: 'CmdOrCtrl+F9',
+    checked: false,
+    click: function (item) {
+      mainWindow.webContents.send('immersion', item.checked)
+    }
   }]
 }, {
   label: '&About',

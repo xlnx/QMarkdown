@@ -20,17 +20,6 @@ const editor = CodeMirror.fromTextArea($("#mdinput").get(0), {
 	}
 });
 
-const defaultConf = {
-	page: {
-		margin: {
-			top: 2.54,
-			bottom: 2.54,
-			left: 1.91,
-			right: 1.91
-		}
-	}
-}
-
 marked.setOptions({
 	renderer: new marked.Renderer(),
 	gfm: true,
@@ -154,10 +143,10 @@ let renderer = {
 	generateRenderers: function() {
 		this.renderers = [];
 		let self = this;
-		$('#mdpreview .frame .katex-block:not(.katex-cache)').each(function(i, block) {
+		$('#mdpreview .frame .katex-block:not(.qmarkdown-cache)').each(function(i, block) {
 			self.renderers.push(function (){
 				renderMathInElement(block);
-				$(block).removeClass("rendering");
+				$(block).removeClass("qmarkdown-rendering");
 				// block.removeAttribute('style');
 				self.cache("katex-block", i, block)
 				// {
@@ -167,10 +156,10 @@ let renderer = {
 				//$(block).find(".katex-html").height()
 			})
 		})
-		$('#mdpreview .frame .katex-inline-block:not(.katex-cache)').each(function(i, block) {
+		$('#mdpreview .frame .katex-inline-block:not(.qmarkdown-cache)').each(function(i, block) {
 			self.renderers.push(function (){
 				renderMathInElement(block);
-				$(block).removeClass("rendering");
+				$(block).removeClass("qmarkdown-rendering");
 				// block.removeAttribute('style');
 				self.cache("katex-inline-block", i, block)
 				// 	width: $(block).width(), 
@@ -178,14 +167,15 @@ let renderer = {
 				// })
 			})
 		})
-		$('#mdpreview .frame pre code').each(function(i, block) {
+		$('#mdpreview .frame pre code:not(.qmarkdown-cache').each(function(i, block) {
 			self.renderers.push(function (){
 				hljs.highlightBlock(block);
-				block.removeAttribute('style');
-				self.cache("code", i, {
-					width: $(block).width(), 
-					height: $(block).height()
-				})
+				$(block).removeClass("qmarkdown-rendering");
+				self.cache("code", i, block);
+				// {
+				// 	width: $(block).width(), 
+				// 	height: $(block).height()
+				// })
 			})
 		})
 	},
@@ -213,29 +203,36 @@ let renderer = {
 			return $(l[0]);
 		}
 		let dom = modClass(html);
-		dom.find('.frame .katex-block:not(.katex-cache)').each(function(i, block) {
+		dom.find('.frame .katex-block:not(.qmarkdown-cache)').each(function(i, block) {
 			let obj = self.readCache("katex-block", i);
 			if (obj) {
-				$(obj).addClass("katex-cache");
-				$(block).addClass("rendering");
+				$(obj).addClass("qmarkdown-cache");
+				$(block).addClass("qmarkdown-rendering");
 				$(block).after(obj);
 				// $(obj).prependTo(block);
 			}
 		})
-		dom.find('.frame .katex-inline-block:not(.katex-cache)').each(function(i, block) {
+		dom.find('.frame .katex-inline-block:not(.qmarkdown-cache)').each(function(i, block) {
 			let obj = self.readCache("katex-inline-block", i);
 			if (obj) {
-				$(obj).addClass("katex-cache");
-				$(block).addClass("rendering");
+				$(obj).addClass("qmarkdown-cache");
+				$(block).addClass("qmarkdown-rendering");
 				$(block).after(obj);
 				// $(obj).prependTo(block)
 			}
 		})
-		dom.find('.frame pre code').each(function(i, block) {
-			let size = self.readCache("code", i);
-			if (size) {
-				block.setAttribute('style', 'width:' + size.width + 'px;height:' + size.height + 'px;display:block;overflow:hidden')
+		dom.find('.frame pre code:not(.qmarkdown-cache)').each(function(i, block) {
+			let obj = self.readCache("code", i);
+			if (obj) {
+				$(obj).addClass("qmarkdown-cache");
+				$(block).addClass("qmarkdown-rendering");
+				$(block).after(obj);
+				// $(obj).prependTo(block)
 			}
+			// let size = self.readCache("code", i);
+			// if (size) {
+			// 	block.setAttribute('style', 'width:' + size.width + 'px;height:' + size.height + 'px;display:block;overflow:hidden')
+			// }
 		})
 		return dom;
 	},
@@ -277,12 +274,6 @@ function renderPages() {
 	$("head style.paper-zoom").get(0).innerHTML = ".qmarkdown-preview-frame{transform: scale(" + e + "," + e + ")}";
 }
 
-// let scrollPos = 0;
-
-// function keepScrollPos() {
-// 	scrollPos = $("#mdpreview").get(0).scrollTop;
-// }
-
 function styleOnload(node, callback) {
 	// for IE6-9 and Opera
 	if (node.attachEvent) {
@@ -321,14 +312,15 @@ function poll(node, callback) {
 	}
 	if (isLoaded) {
 		// give time to render.
+		// callback();
 		setTimeout(function() {
 			callback();
-		}, 1);
+		}, 0.2);
 	}
 	else {
 		setTimeout(function() {
 			poll(node, callback);
-		}, 1);
+		}, 0.2);
 	}
 }
 
@@ -347,24 +339,9 @@ let sideBar = {
 	}
 }
 
-function cacheBase64Image(url, callback, outputFormat){
-	var canvas = document.createElement('CANVAS'),
-	  ctx = canvas.getContext('2d'),
-	  img = new Image;
-	img.crossOrigin = 'Anonymous';
-	img.onload = function(){
-		canvas.height = img.height;
-		canvas.width = img.width;
-		ctx.drawImage(img,0,0);
-		var dataURL = canvas.toDataURL(outputFormat || 'image/png');
-		callback.call(this, dataURL);
-		canvas = null; 
-	};
-	img.src = url;
-}
-
 let configure = {
 	data: {},
+	defaultConf: {},
 	lock: {},
 	setter: {},
 	images: [],
@@ -384,10 +361,7 @@ let configure = {
 		let l = key.split(".");
 		let k = l.pop();
 		for (let x of l) {
-			if (!origin[x]) {
-				origin[x] = {};
-			}
-			origin = origin[x];
+			origin = !origin[x] ? (origin[x] = {}) : origin[x];
 		}
 		if (this.setter[key]) {
 			this.setter[key](val, origin[k]);
@@ -399,10 +373,7 @@ let configure = {
 		let l = key.split(".");
 		let k = l.pop();
 		for (let x of l) {
-			if (!origin[x]) {
-				origin[x] = {};
-			}
-			origin = origin[x];
+			origin = !origin[x] ? (origin[x] = {}) : origin[x];
 		}
 		return origin[k];
 	},
@@ -436,7 +407,21 @@ let configure = {
 	},
 	setImage: function(key, val) {
 		let self = this;
-		cacheBase64Image(val, function (base64URL) {
+		!function (url, callback, outputFormat){
+			var canvas = document.createElement('CANVAS'),
+			  ctx = canvas.getContext('2d'),
+			  img = new Image;
+			img.crossOrigin = 'Anonymous';
+			img.onload = function(){
+				canvas.height = img.height;
+				canvas.width = img.width;
+				ctx.drawImage(img,0,0);
+				var dataURL = canvas.toDataURL(outputFormat || 'image/png');
+				callback.call(this, dataURL);
+				canvas = null; 
+			};
+			img.src = url;
+		} (val, function (base64URL) {
 			self.set(key, base64URL);
 		});
 	},
@@ -450,95 +435,63 @@ let configure = {
 		} else {
 			return "";
 		}
-	}
-}
-
-function bind(selector, key, options) {
-	switch (options.type) {
-	case "value":
+	},
+	bind: function (selector, key, options) {
+		let self = this;
 		!function () {
+			if (!('setter' in options)) {
+				options.setter = function () {}
+			}
 			let k = key;
 			let e = $(selector);
 			let f = options.setter;
-			let v = options.default;
-			if (typeof v[0] != "function") {
-				let y = v[0];
-				v[0] = (x) => { return x == y; };
-			}
-			function getval() {
-				return e.val();
-			}
+			let v = options.default
 			e.bind("input propertychange", function () {
-				if (!configure.lock[k]) {
-					configure.lock[k] = true;
-					configure.set(k, getval());
-					configure.lock[k] = false;
+				if (!self.lock[k]) {
+					self.lock[k] = true;
+					self.set(k, getval());
+					self.lock[k] = false;
 				}
-			})
-			configure.setter[k] = function (value) {
-				if (v[0](value)) {
-					value = v[1];
-				} else {
-					e.val(value);
+			});
+			if (v instanceof Array) {
+				if (typeof v[0] != "function") {
+					let y = v[0];
+					v[0] = (x) => { return x == undefined || x == y; };
 				}
-				f(value);
+			} else {
+				v = [(x) => { return x == undefined || x == ""; }, v];
 			}
-		}(); break;
-	default:
-		throw "not defined";
+			let origin = self.defaultConf;
+			let l = k.split(".");
+			let ky = l.pop();
+			for (let x of l) {
+				origin = !origin[x] ? (origin[x] = {}) : origin[x];
+			}
+			origin[ky] = undefined;
+			switch (options.type) {
+			case "value": {
+				let getval = () => e.val();
+				self.setter[k] = function (value) {
+					if (v[0](value)) { value = v[1]; }
+					e.val(value);
+					f(value);
+				}; } break;
+			case "href": {
+				let getval = () => e.href;
+				self.setter[k] = function (value) {
+					if (v[0](value)) { value = v[1]; }
+					e.get(0).setAttribute("href", value);
+					f(value);
+				}; } break;
+			default:
+				throw "not defined";
+			}
+		} ();
+	},
+	init: function () {
+		this.load(this.defaultConf);
 	}
 }
-
-//  Event Listeners
-
-editor.on("change", function (self, changeObj) {
-	renderFile();
-	fileState[0] = editor.getValue() == fileContent;
-});
-
-bind("#page-margin-top", "page.margin.top", {
-	type: "value",
-	default: ["", "2.54"],
-	setter: function (value) {
-		$("head style.page-padding-top").get(0).innerHTML =
-		  "div.page div.padding {padding-top:" + value + "cm} @page {margin-top:" + value + "cm}";
-		renderFile();
-	}
-});
-
-bind("#page-margin-bottom", "page.margin.bottom", {
-	type: "value",
-	default: ["", "2.54"],
-	setter: function (value) {
-		$("head style.page-padding-bottom").get(0).innerHTML =
-		  "div.page div.padding {padding-bottom:" + value + "cm} @page {margin-bottom:" + value + "cm}";
-		renderFile();
-	}
-});
-
-bind("#page-margin-left", "page.margin.left", {
-	type: "value",
-	default: ["", "1.91"],
-	setter: function (value) {
-		$("head style.page-padding-left").get(0).innerHTML =
-		  "div.page div.padding {padding-left:" + value + "cm} @page {margin-left:" + value + "cm}";
-		$("head style.print-padding").get(0).innerHTML = 
-		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.right"))) + "cm !important; box-sizing: border-box !important}}";
-		renderFile();
-	}
-});
-
-bind("#page-margin-right", "page.margin.right", {
-	type: "value",
-	default: ["", "1.91"],
-	setter: function (value) {
-		$("head style.page-padding-right").get(0).innerHTML =
-		  "div.page div.padding {padding-right:" + value + "cm} @page {margin-right:" + value + "cm}";
-		$("head style.print-padding").get(0).innerHTML = 
-		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.left"))) + "cm !important; box-sizing: border-box !important}}";
-		renderFile();
-	}
-});
 
 $("#mdpreview").click(function () {
 	let dom = $("#mdpreview .frame .marked-elem:hover");
@@ -580,24 +533,87 @@ $("#mdpreview").mousemove(function () {
 	}
 })
 
-$(function () {
-	editor.focus();
-	(window.onresize = renderPages)();
-	configure.load(defaultConf);
-})
+editor.on("change", function (self, changeObj) {
+	renderFile();
+	fileState[0] = editor.getValue() == fileContent;
+});
+
+// Properties
+
+configure.bind("#page-margin-top", "page.margin.top", {
+	type: "value",
+	default: "2.54",
+	setter: function (value) {
+		$("head style.page-padding-top").get(0).innerHTML =
+		"div.page div.padding {padding-top:" + value + "cm} @page {margin-top:" + value + "cm}";
+		renderFile();
+	}
+});
+
+configure.bind("#page-margin-bottom", "page.margin.bottom", {
+	type: "value",
+	default: "2.54",
+	setter: function (value) {
+		$("head style.page-padding-bottom").get(0).innerHTML =
+		  "div.page div.padding {padding-bottom:" + value + "cm} @page {margin-bottom:" + value + "cm}";
+		renderFile();
+	}
+});
+
+configure.bind("#page-margin-left", "page.margin.left", {
+	type: "value",
+	default: "1.91",
+	setter: function (value) {
+		$("head style.page-padding-left").get(0).innerHTML =
+		  "div.page div.padding {padding-left:" + value + "cm} @page {margin-left:" + value + "cm}";
+		$("head style.print-padding").get(0).innerHTML = 
+		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.right"))) + "cm !important; box-sizing: border-box !important}}";
+		renderFile();
+	}
+});
+
+configure.bind("#page-margin-right", "page.margin.right", {
+	type: "value",
+	default: "1.91",
+	setter: function (value) {
+		$("head style.page-padding-right").get(0).innerHTML =
+		  "div.page div.padding {padding-right:" + value + "cm} @page {margin-right:" + value + "cm}";
+		$("head style.print-padding").get(0).innerHTML = 
+		  "@media print {div.frame {padding-right:" + (parseFloat(value) + parseFloat(configure.get("page.margin.left"))) + "cm !important; box-sizing: border-box !important}}";
+		renderFile();
+	}
+});
+
+configure.bind("head link.paper-size", "page.paper", {
+	type: "href",
+	default: "paper\\A4.css",
+	setter: function (value) {
+		styleOnload($("head link.paper-size").get(0), renderPages);
+	}
+});
+
+configure.bind("head link.code-flavour", "flavour.code", {
+	type: "href",
+	default: "flavour\\code\\github.css"
+});
+
+configure.bind("head link.flavour", "flavour.document", {
+	type: "href",
+	default: "flavour\\default.css"
+});
+
+// Event listeners
 
 ipcRenderer.on('changeCodeFlavour', (event, arg) => {
-	$("head link.code-flavour").get(0).setAttribute('href', arg);
+	configure.set("flavour.code", arg);
 })
 
 ipcRenderer.on('changeDocumentFlavour', (event, arg) => {
-	$("head link.flavour").get(0).setAttribute('href', arg);
+	configure.set("flavour.document", arg);
 })
 
 ipcRenderer.on('changePaperSize', (event, arg) => {
-	let link = $("head link.paper-size").get(0);
-	styleOnload(link, renderPages);
-	link.setAttribute('href', arg);
+	configure.set("page.paper", arg);
 })
 
 ipcRenderer.on('setAutoHeight', (event, arg) => {
@@ -728,6 +744,7 @@ ipcRenderer.on('open', (event, arg) => {
 					let conf = file.match(/^<!--\|[^\|]*\|-->[\n]/);
 					if (conf) {
 						conf = JSON.parse(conf[0].match(/\|([^\|]*)\|/)[1]);
+						configure.init();
 						configure.load(conf);
 						editor.setValue(file.replace(/^<!--\|[^\|]*\|-->[\n]/, ""));
 						fileState = [true, true];
@@ -744,7 +761,7 @@ ipcRenderer.on('open', (event, arg) => {
 		}
 		xhr.send(null);
 	} else {
-		configure.load(defaultConf);
+		configure.init();
 		editor.setValue("");
 		fileState = [true, true];
 		fileContent = editor.getValue();
@@ -761,25 +778,47 @@ ipcRenderer.on('checkFileState', (event, arg) => {
 	ipcRenderer.send('checkFileState', arg, fileState);
 })
 
-function base64Image(img, callback) {
-	var xhr = new XMLHttpRequest(); 
-	img = "file:///" + img;
-	xhr.responseType = 'blob'; 
-	xhr.onload = function () {
-		r = new FileReader();
-		r.onload = function(){
-			callback(r.result);
-		}
-		r.readAsDataURL(xhr.response);
-	}
-	xhr.open('GET', img, true);
-	xhr.send();
-}
-
 ipcRenderer.on('insertImage', (event, arg) => {
-	base64Image(arg, function(base64) {
+	!function (img, callback) {
+		var xhr = new XMLHttpRequest(); 
+		img = "file:///" + img;
+		xhr.responseType = 'blob'; 
+		xhr.onload = function () {
+			r = new FileReader();
+			r.onload = function(){
+				callback(r.result);
+			}
+			r.readAsDataURL(xhr.response);
+		}
+		xhr.open('GET', img, true);
+		xhr.send();
+	} (arg, function(base64) {
 		let ix = configure.getNextImageIndex();
 		configure.setImage(ix, base64);
 		editor.replaceSelections(['![](' + ix + ')'])
 	})
+})
+
+ipcRenderer.on('showPreview', (event, arg) => {
+	if (arg) {
+		$(".main").css("width", "50%");
+		$("#mdpreview").css("display", "block");
+	} else {
+		$("#mdpreview").css("display", "none");
+		$(".main").css("width", "100%");
+	}
+})
+
+ipcRenderer.on('immersion', (event, arg) => {
+	if (arg) {
+		$("head link.immersion").get(0).setAttribute("href", "./src/css/immersion.css");
+	} else {
+		$("head link.immersion").get(0).setAttribute("href", "");
+	}
+})
+
+$(function () {
+	editor.focus();
+	(window.onresize = renderPages)();
+	configure.init();
 })

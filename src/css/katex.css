@@ -1301,13 +1301,3 @@ screen and (min-resolution:192dpi) {
 	border-bottom-style: solid;
 	border-bottom-width: .08em
 }
-
-.katex-block.rendering,
-.katex-inline-block.rendering {
-	display: none !important;
-}
-
-.katex-block:not(.rendering) + .katex-block.katex-cache,
-.katex-inline-block:not(.rendering) + .katex-inline-block.katex-cache {
-	display: none !important;
-}

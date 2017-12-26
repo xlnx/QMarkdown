@@ -14,7 +14,7 @@ div.page {
 	/* position: absolute; */
 	position: relative;
 	left: 0px;
-	transition: top 0.3s, width 0.3s, height 0.3s, left 0.3s;
+	transition: top 0.3s, height 0.3s; /*, width 0.3s, height 0.3s, left 0.3s;*/
 }
 
 div.page:nth-of-type(n+1) {
@@ -176,4 +176,12 @@ input::-webkit-inner-spin-button{
 #mdpreview .page .frame 
 .marked-elem-hover {
 	background-color: #a0c5e8;
+}
+
+.qmarkdown-rendering {
+	display: none !important;
+}
+
+:not(.qmarkdown-rendering) + .qmarkdown-cache {
+	display: none !important;
 }

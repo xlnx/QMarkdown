@@ -8,7 +8,6 @@
 	margin: 0;
 	width: 100%;
 	font-weight: 200;
-	color: #333;
 	white-space: pre-wrap;
 }
 
@@ -67,7 +66,8 @@
     padding-right: 10px;
     color: #869194;
     text-align: right;
-    background-color: #eff2f3;
+	/* background-color: #eff2f3; */
+	background-color: rgba(0, 0, 0, 0.01);
 }
 
 .hljs .code {
@@ -75,11 +75,13 @@
 }
 
 .hljs .code pre {
-	background: #f7f7f7;
+	/* background: #f7f7f7; */
+	color: inherit;
 }
 
 .hljs .code pre div:nth-of-type(even) {
-	background-color: #fcfcfc;
+	/* background-color: #fcfcfc; */
+	background-color: rgba(0, 0, 0, 0.01);
 	color: inherit;
 }
 

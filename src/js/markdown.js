@@ -975,13 +975,13 @@
 	
 		if (!lang) {
 		return '<pre class="marked-elem" data-start="' 
-			+ start + '" data-end="' + end + '"><code>'
+			+ start + '" data-end="' + end + '"><code class="multi-line">'
 			+ (escaped ? code : escape(code, true))
 			+ '\n</code></pre>';
 		}
 	
 		return '<pre class="marked-elem" data-start="' 
-		+ start + '" data-end="' + end + '"><code class="'
+		+ start + '" data-end="' + end + '"><code class="multi-line '
 		+ this.options.langPrefix
 		+ escape(lang, true)
 		+ '">'

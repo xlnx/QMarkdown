@@ -167,11 +167,22 @@ let renderer = {
 				// })
 			})
 		})
-		$('#mdpreview .frame pre code:not(.qmarkdown-cache').each(function(i, block) {
+		$('#mdpreview .frame pre code.multi-line:not(.qmarkdown-cache').each(function(i, block) {
 			self.renderers.push(function (){
-				hljs.highlightBlock(block);
+				hljs.highlightBlock(block, true);
 				$(block).removeClass("qmarkdown-rendering");
 				self.cache("code", i, block);
+				// {
+				// 	width: $(block).width(), 
+				// 	height: $(block).height()
+				// })
+			})
+		})
+		$('#mdpreview .frame code:not(.multi-line):not(.qmarkdown-cache').each(function(i, block) {
+			self.renderers.push(function (){
+				hljs.highlightBlock(block, false);
+				$(block).removeClass("qmarkdown-rendering");
+				self.cache("codespan", i, block);
 				// {
 				// 	width: $(block).width(), 
 				// 	height: $(block).height()
@@ -221,8 +232,21 @@ let renderer = {
 				// $(obj).prependTo(block)
 			}
 		})
-		dom.find('.frame pre code:not(.qmarkdown-cache)').each(function(i, block) {
+		dom.find('.frame pre code.multi-line:not(.qmarkdown-cache)').each(function(i, block) {
 			let obj = self.readCache("code", i);
+			if (obj) {
+				$(obj).addClass("qmarkdown-cache");
+				$(block).addClass("qmarkdown-rendering");
+				$(block).after(obj);
+				// $(obj).prependTo(block)
+			}
+			// let size = self.readCache("code", i);
+			// if (size) {
+			// 	block.setAttribute('style', 'width:' + size.width + 'px;height:' + size.height + 'px;display:block;overflow:hidden')
+			// }
+		})
+		dom.find('.frame code:not(.multi-line):not(.qmarkdown-cache)').each(function(i, block) {
+			let obj = self.readCache("codespan", i);
 			if (obj) {
 				$(obj).addClass("qmarkdown-cache");
 				$(block).addClass("qmarkdown-rendering");

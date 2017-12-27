@@ -1032,6 +1032,7 @@
 	};
 	
 	Renderer.prototype.heading = function(text, level, raw, start, end) {
+		outline.push(level, text, start);
 		return '<h'
 		+ level
 		+ ' id="'
@@ -1418,6 +1419,7 @@
 	
 	function marked(src, opt, callback) {
 		configure.reloadImageList();
+		outline.clear();
 
 		if (callback || typeof opt === 'function') {
 		if (!callback) {

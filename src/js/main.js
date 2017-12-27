@@ -16,6 +16,18 @@ const editor = CodeMirror.fromTextArea($("#mdinput").get(0), {
 			} else {
 				editor.replaceSelection(editor.getOption() ? "\t" : Array(editor.getOption("indentUnit") + 1).join(" "), "end", "+input");
 			}
+		},
+		F3: function () {
+			editor.execCommand("findNext");
+		},
+		"Shift-F3": function () {
+			editor.execCommand("findPrev");
+		},
+		"Ctrl-Alt-Enter": function () {
+			editor.execCommand("replaceAll");
+		},
+		"Ctrl-H": function () {
+			editor.execCommand("replace");
 		}
 	}
 });
@@ -44,14 +56,15 @@ function md2html(md) {
 	let html = '<div class="page"><div class="padding"><div class="frame">' + mdconverter(md) + '</div></div></div>';
 	html = html.replace(/<!--page-->/gi, '</div></div></div><div class="page"><div class="padding"><div class="frame">');
 	let v = html.match(/<!--style:([^-]+)-->/gi);
-	if (v) for (x of v) {
+	if (v) for (let x of v) {
 		html = '<link rel="stylesheet" href="./flavour/custom/css/' + /<!--style:([^-]+)-->/gi.exec(x)[1] + '.css"/>' + html;
 	}
 	v = html.match(/<!--import:([^-]+)-->/gi);
-	if (v) for (x of v) {
+	if (v) for (let x of v) {
 		html += '<script type="text/javascript" src="./flavour/custom/js/' + /<!--import:([^-]+)-->/gi.exec(x)[1] + '.js"/>';
 	}
 	// html = html.replace(/<!--::((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->((?:.|\n)*)<!---->/g);
+	outline.render();
 	return '<div class="qmarkdown-preview-frame">' + html + '</div>';
 }
 
@@ -286,6 +299,27 @@ let renderer = {
 	}
 }
 
+let outline = {
+	data: [],
+	push: function (level, text, pos) {
+		this.data.push([level, text, pos]);
+	},
+	clear: function () {
+		this.data = [];
+	},
+	render: function () {
+		// function build (data) {
+		let res = "";
+		for (let obj of this.data) {
+			res += '<div class="outline-header outline-h' + obj[0] + '" data-pos="' + obj[2] + '">' + obj[1] + "</div>";
+		}
+		$("#outline").html(res);
+		// }
+		// let result = bulid(this.data);
+		// return result;
+	}
+}
+
 function renderFile() {
 	renderer.toggle();
 }
@@ -516,6 +550,27 @@ let configure = {
 		this.load(this.defaultConf);
 	}
 }
+
+$("#outline").click(function () {
+	let dom = $("#outline .outline-header:hover");
+	if (dom) {
+		dom = $(dom.get(dom.length - 1));
+		let start = dom.attr("data-pos");
+		if (start) {
+			start = parseInt(start);
+			let text = editor.getValue();
+			let text1 = text.substr(0, start);
+			let s = text1.split('\n').length - 1;
+			let s1 = s ? start - text1.lastIndexOf('\n') - 1 : start;
+			// $("#mdinput").get(0).setSelectionRange(, dom.attr("data-end"));
+			editor.setSelection({
+				line: s,
+				ch: s1
+			})
+			editor.focus();
+		}
+	}
+})
 
 $("#mdpreview").click(function () {
 	let dom = $("#mdpreview .frame .marked-elem:hover");
@@ -838,6 +893,16 @@ ipcRenderer.on('immersion', (event, arg) => {
 		$("head link.immersion").get(0).setAttribute("href", "./src/css/immersion.css");
 	} else {
 		$("head link.immersion").get(0).setAttribute("href", "");
+	}
+})
+
+ipcRenderer.on('outline', (event, arg) => {
+	if (arg) {
+		$(".qmarkdown-view").addClass("span9")
+		$(".outline").removeClass("hidden");
+	} else {
+		$(".qmarkdown-view").removeClass("span9");
+		$(".outline").addClass("hidden");
 	}
 })
 

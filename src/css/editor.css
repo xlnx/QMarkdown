@@ -6,28 +6,25 @@ html {
 	-ms-text-size-adjust: 100%
 }
 
-textarea {
-	margin: 0;
-	font-size: 100%;
-	vertical-align: middle
-}
-
-textarea {
-	overflow: auto;
-	vertical-align: top
-}
-
 body {
 	margin: 0;
 	font-family: Helvetica, Arial, "Hiragino Sans GB", sans-serif;
 	font-size: 14px;
 	line-height: 20px;
 	color: #555555;
-	background-color: white
+	background-color: #f3f2ee /*white*/
 }
 
-.span6 {
+.main .span9 {
+	width: 690px
+}
+
+.main .span6 {
 	width: 460px
+}
+
+.main .span3 {
+	width: 230px
 }
 
 .row-fluid {
@@ -62,13 +59,31 @@ body {
 	margin-left: 0
 }
 
-.span6 {
+.main .span9 {
+	width: 690px
+}
+
+.main .span6 {
 	width: 460px
+}
+
+.main .span3 {
+	width: 230px
+}
+
+.row-fluid .span9 {
+	width: 75.0%;
+	*width: 74.94681%
 }
 
 .row-fluid .span6 {
 	width: 50.0%;
 	*width: 49.94681%
+}
+
+.row-fluid .span3 {
+	width: 25.0%;
+	*width: 24.94681%
 }
 
 @media (min-width: 768px) and (max-width: 979px) {
@@ -77,8 +92,14 @@ body {
 		min-height: 1px;
 		margin-left: 20px
 	}
+	.span9 {
+		width: 528px
+	}
 	.span6 {
 		width: 352px
+	}
+	.span3 {
+		width: 176px;
 	}
 	.row-fluid {
 		width: 100%;
@@ -107,15 +128,20 @@ body {
 	.row-fluid [class*="span"]:first-child {
 		margin-left: 0
 	}
+	.row-fluid .span9 {
+		width: 75.0%;
+		*width: 74.94681%
+	}
 	.row-fluid .span6 {
 		width: 50.0%;
 		*width: 49.94681%
 	}
+	.row-fluid .span3 {
+		width: 25.0%;
+		*width: 24.94681%
+	}
 	textarea {
 		margin-left: 0
-	}
-	textarea.span6 {
-		width: 338px
 	}
 }
 
@@ -173,10 +199,6 @@ body {
 	line-height: 20px
 }
 
-.preview-mode .main {
-	border-right: 1px solid #d9d9d9
-}
-
 .preview-mode .preview {
 	background-color: #e6e6e6;
 	overflow-y: auto
@@ -184,23 +206,6 @@ body {
 
 .main > div {
 	height: 100%;
-}
-
-.main > .gutter {
-	width: 44px;
-	padding: 0;
-	margin: 0;
-	position: absolute;
-}
-
-.main > .editor {
-	left: 0;
-	width: 100%;
-	position: relative;
-}
-
-.main > .editor .QMarkdown-editor > div:focus {
-	background: rgba(204,204,204,0.2);
 }
 
 .cm-comment {
@@ -251,4 +256,12 @@ body {
 		height: auto !important;
 		width: auto !important;
 	}
+}
+
+.main #outline {
+	overflow-y: auto;
+}
+
+.main .hidden {
+	display: none
 }

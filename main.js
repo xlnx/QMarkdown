@@ -90,7 +90,7 @@ let template = [
     }
   }, {
     label: 'Export as HTML',
-    accelerator: 'CmdOrCtrl+H',
+    accelerator: 'CmdOrCtrl+L',
     click: function (item, focusedWindow) {
       dialog.showSaveDialog({
         properties: ['Export as HTML'],
@@ -211,6 +211,14 @@ let template = [
     checked: false,
     click: function (item) {
       mainWindow.webContents.send('immersion', item.checked)
+    }
+  }, {
+    type: 'checkbox',
+    label: '&Outline',
+    accelerator: 'CmdOrCtrl+F8',
+    checked: true,
+    click: function (item) {
+      mainWindow.webContents.send('outline', item.checked)
     }
   }]
 }, {

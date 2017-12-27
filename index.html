@@ -8,6 +8,8 @@
   <link class="native" rel="stylesheet" href="./src/css/codemirror.css">
   <link class="native" rel="stylesheet" href="./src/css/cmeditor.css">
   <link class="native" rel="stylesheet" href="./src/css/CodeMirror/foldgutter.css">
+  <link class="native" rel="stylesheet" href="./src/css/CodeMirror/dialog.css">
+  <link class="native" rel="stylesheet" href="./src/css/CodeMirror/matchesonscrollbar.css">
   <link class="auto-height native" rel="stylesheet" href="./src/css/autoheight.css" />
   <link class="immersion native" rel="stylesheet"/>
   
@@ -34,19 +36,26 @@
 <body>
   <div id="perm" style="width:100cm; height:0; float: left"></div>
   <div class="row-fluid preview-mode active">
-    <div class="span6 main">
-      <textarea id="mdinput" class="text mousetrap"></textarea>
-      <!-- <div class="Qmarkdown-editor"> -->
-        <!-- <div class="gutter">
-          <div class="QMarkdown-gutter"></div>
+    <div class="main">
+      <div class="span3 outline">
+        <div id="outline">
         </div>
-        <div class="editor">
-          <div class="QMarkdown-editor text mousetrap" id="mdinput" contenteditable="true"></div>
-        </div> -->
-        <!-- </div> -->
       </div>
-      <div id="mdpreview" class="span6 preview"> <!-- onscroll="keepScrollPos()"-->
-        <div class="page"></div>
+      <div class="span9 qmarkdown-view">
+        <div class="span6" style="height: 100%">
+          <textarea id="mdinput" class="text mousetrap"></textarea>
+        </div>
+        <!-- <div class="Qmarkdown-editor"> -->
+          <!-- <div class="gutter">
+            <div class="QMarkdown-gutter"></div>
+          </div>
+          <div class="editor">
+            <div class="QMarkdown-editor text mousetrap" id="mdinput" contenteditable="true"></div>
+          </div> -->
+          <!-- </div> -->
+        <div id="mdpreview" class="preview"> <!-- onscroll="keepScrollPos()"-->
+          <div class="page"></div>
+        </div>
       </div>
     </div>
     <div class="side-bar">
@@ -82,11 +91,19 @@
       <script class="native" src="./src/js/highlight.js"></script>
       <script class="native" src="./src/js/languages.js"></script>
       <script class="native" src="./src/js/codemirror.js"></script>
+
       <script class="native" src="./src/js/CodeMirror/active-line.js"></script>
+      <script class="native" src="./src/js/CodeMirror/search.js"></script>
+      <script class="native" src="./src/js/CodeMirror/searchcursor.js"></script>
+      <script class="native" src="./src/js/CodeMirror/dialog.js"></script>
+      <script class="native" src="./src/js/CodeMirror/jump-to-line.js"></script>
+      <script class="native" src="./src/js/CodeMirror/matchesonscrollbar.js"></script>
+      <script class="native" src="./src/js/CodeMirror/annotatescrollbar.js"></script>
       <script class="native" src="./src/js/CodeMirror/foldgutter.js"></script>
       <script class="native" src="./src/js/CodeMirror/foldcode.js"></script>
       <script class="native" src="./src/js/CodeMirror/markdown-fold.js"></script>
       <script class="native" src="./src/js/CodeMirror/markdown.js"></script>
+
       <script class="native" src="./src/js/katex.js"></script>
       <script class="native" src="./src/js/katex.auto-render.js"></script>
       <script class="native" src="./src/js/markdown.js"></script>

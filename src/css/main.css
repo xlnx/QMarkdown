@@ -1,6 +1,7 @@
-html, body, .preview-mode, .main, #mdpreview, #mdinput {
+html, body, .preview-mode, .main, #mdpreview, #outline {
 	height: 100%;
 	position: relative;
+	font-family: "PT Serif", "微软雅黑";
 } 
 
 div.page {
@@ -41,12 +42,13 @@ div.side-bar {
 	height: 100%;
 	top: 0;
 	width: 300px;
-	left: -300px;
+	left: -310px;
 	float: left;
 	background: #414141;
 	transition: left ease-in-out 0.3s;
 	position: absolute;
 	z-index: 10000;
+	box-shadow: 0 2px 8px #000000;
 }
 
 input::-webkit-outer-spin-button,
@@ -184,4 +186,47 @@ input::-webkit-inner-spin-button{
 
 :not(.qmarkdown-rendering) + .qmarkdown-cache {
 	display: none !important;
+}
+
+div.outline {
+	/* font-family: 'PTSerif', Times, serif; */
+	height: 100%;
+	width: 25%;
+	margin: 0;
+	padding: 3px 18px;
+	/* border-right: 1px solid #000000; */
+}
+
+div.outline-header {
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+
+div.outline-header:hover {
+	font-weight: bold;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+div.outline-h1 {
+	padding-left: 0;
+}
+div.outline-h2 {
+	padding-left: 1em;
+}
+div.outline-h3 {
+	padding-left: 2em;
+}
+div.outline-h4 {
+	padding-left: 3em;
+}
+div.outline-h5 {
+	padding-left: 4em;
+}
+div.outline-h6 {
+	padding-left: 5em;
+}
+
+div.CodeMirror {
+	height: 100%;
 }

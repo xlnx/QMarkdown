@@ -202,10 +202,22 @@ div.outline-header {
 	padding-bottom: 3px;
 }
 
-div.outline-header:hover {
+div.outline-header.selected {
 	font-weight: bold;
+}
+
+div.outline-header:hover {
 	text-decoration: underline;
+	background-color: #eeeeee;
 	cursor: pointer;
+}
+
+#mdpreview {
+	border-left: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+div.outline {
+	border-right: 1px solid rgba(0, 0, 0, 0.07);
 }
 
 div.outline-h1 {

@@ -2,6 +2,7 @@ const debug = true
 
 const electron = require('electron')
 const fs = require('fs')
+const Config = require('./config.js')
 
 const app = electron.app
 const Menu = electron.Menu
@@ -13,18 +14,40 @@ const shell = electron.shell
 const path = require('path')
 const url = require('url')
 
-let mainWindow, menu, currentFile
+let mainWindow, menu, currentFile, configure
+let webSync = new (function () {
+  let self = this
+  this.ok = false
+  this.data = []
+  ipcMain.on('load-events', function () {
+    self.ok = true
+    self.dispatch()
+  })
+  this.dispatch = function () {
+    while (self.data.length) {
+      mainWindow.webContents.send(self.data[0][0], self.data[0][1])
+      self.data = self.data.slice(1)
+    }
+  }
+  this.send = function (section, data) {
+    if (self.ok) {
+      mainWindow.webContents.send(section, data)
+    } else {
+      this.data.push([section, data])
+    }
+  }
+}) ()
 
 function changeCodeFlavour (item) {
-  mainWindow.webContents.send('changeCodeFlavour', item.href)
+  webSync.send('changeCodeFlavour', item.href)
 }
 
 function changeDocumentFlavour (item) {
-  mainWindow.webContents.send('changeDocumentFlavour', item.href)
+  webSync.send('changeDocumentFlavour', item.href)
 }
 
 function changePaperSize (item) {
-  mainWindow.webContents.send('changePaperSize', item.href)
+  webSync.send('changePaperSize', item.href)
 }
 
 let template = [
@@ -34,19 +57,19 @@ let template = [
     label: '&New',
     accelerator: 'CmdOrCtrl+N',
     click: function (item, focusedWindow) {
-      mainWindow.webContents.send('checkFileState', 'new')
+      webSync.send('checkFileState', 'new')
     }
   }, {
     label: '&Open',
     accelerator: 'CmdOrCtrl+O',
     click: function (item, focusedWindow) {
-      mainWindow.webContents.send('checkFileState', 'open')
+      webSync.send('checkFileState', 'open')
     }
   }, {
     label: '&Close',
     accelerator: 'CmdOrCtrl+W',
     click: function (item, focusedWindow) {
-      mainWindow.webContents.send('checkFileState', 'close')
+      webSync.send('checkFileState', 'close')
     }
   }, {
     label: '&Save',
@@ -65,9 +88,9 @@ let template = [
         }]
       }, function (files) {
         if (files) {
-          mainWindow.webContents.send('save', files)
+          webSync.send('save', files)
           currentFile = files
-          mainWindow.webContents.send('setTitle', currentFile)
+          webSync.send('setTitle', currentFile)
         }
       })
     }
@@ -84,7 +107,7 @@ let template = [
         }]
       }, function (files) {
         if (files) {
-          mainWindow.webContents.send('exportPDF', files)
+          webSync.send('exportPDF', files)
         }
       })
     }
@@ -99,7 +122,7 @@ let template = [
         }]
       }, function (files) {
         if (files) {
-          mainWindow.webContents.send('exportHTML', files)
+          webSync.send('exportHTML', files)
         }
       })
     }
@@ -149,12 +172,12 @@ let template = [
     type: "checkbox",
     checked: true,
     click: function (item) {
-      mainWindow.webContents.send("setAutoHeight", item.checked ? "./src/css/autoheight.css" : "");
+      webSync.send("setAutoHeight", item.checked ? "./src/css/autoheight.css" : "");
     }
   }, {
     label: 'Page &Options',
     click: function (item) {
-      mainWindow.webContents.send('toggleSideBar')
+      webSync.send('toggleSideBar')
     }
   }, {
     type: "separator"
@@ -174,7 +197,7 @@ let template = [
         if (files && files.length > 0) {
           files = files[0]
           if (files) {
-            mainWindow.webContents.send('insertImage', files);
+            webSync.send('insertImage', files);
           }
         }
       })
@@ -198,27 +221,27 @@ let template = [
     }
   }, {
     type: 'checkbox',
-    label: 'Show &Preview',
-    accelerator: 'CmdOrCtrl+F10',
-    checked: true,
-    click: function (item) {
-      mainWindow.webContents.send('showPreview', item.checked)
-    }
-  }, {
-    type: 'checkbox',
     label: '&Immersion',
-    accelerator: 'CmdOrCtrl+F9',
+    accelerator: 'CmdOrCtrl+F8',
     checked: false,
     click: function (item) {
-      mainWindow.webContents.send('immersion', item.checked)
+      webSync.send('immersion', item.checked)
     }
   }, {
     type: 'checkbox',
     label: '&Outline',
-    accelerator: 'CmdOrCtrl+F8',
+    accelerator: 'CmdOrCtrl+F9',
+    checked: false,
+    click: function (item) {
+      webSync.send('outline', item.checked)
+    }
+  }, {
+    type: 'checkbox',
+    label: 'Show &Preview',
+    accelerator: 'CmdOrCtrl+F10',
     checked: true,
     click: function (item) {
-      mainWindow.webContents.send('outline', item.checked)
+      webSync.send('showPreview', item.checked)
     }
   }]
 }, {
@@ -369,8 +392,18 @@ function initPaper () {
 }
 
 function doInitMenu () {
-  menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
+  // menu = Menu.buildFromTemplate(template)
+  // Menu.setApplicationMenu(menu)
+  configure = new Config(template)
+  configure.bind("&View.&Outline", "view.outline")
+  configure.bind("&View.&Immersion", "view.immersion")
+  configure.bind("&View.Show &Preview", "view.preview")
+  configure.init()
+  try {
+    configure.load(JSON.parse(fs.readFileSync("./configure.json")))
+  } catch (e) {}
+  webSync.send("init-finish")
+  menu = configure.menu
 }
 
 function saveFile (event, file, dir, after) {
@@ -401,23 +434,23 @@ function openFile () {
     if (files && files.length > 0) {
       files = files[0]
       if (files) {
-        mainWindow.webContents.send('open', files)
+        webSync.send('open', files)
         currentFile = files
-        mainWindow.webContents.send('setTitle', currentFile)
+        webSync.send('setTitle', currentFile)
       }
     }
   })
 }
 
 function closeFile () {
-  mainWindow.webContents.send('open', null)
+  webSync.send('open', null)
   currentFile = null
-  mainWindow.webContents.send('setTitle', currentFile)
+  webSync.send('setTitle', currentFile)
 }
 
 function toggleSave(after) {
   if (currentFile) {
-    mainWindow.webContents.send('save', currentFile, after)
+    webSync.send('save', currentFile, after)
   } else {
     dialog.showSaveDialog({
       properties: ['Save QMarkdown File'],
@@ -426,9 +459,9 @@ function toggleSave(after) {
       }]
     }, function (files) {
       if (files) {
-        mainWindow.webContents.send('save', files, after)
+        webSync.send('save', files, after)
         currentFile = files
-        mainWindow.webContents.send('setTitle', currentFile)
+        webSync.send('setTitle', currentFile)
       }
     })
   }
@@ -514,7 +547,7 @@ function createWindow () {
   }))
 
   mainWindow.on('closed', function () {
-    // mainWindow.webContents.send('checkFileState', 'close')
+    fs.writeFile("./configure.json", configure.dump(), () => 0)
     mainWindow = null
   })
 }

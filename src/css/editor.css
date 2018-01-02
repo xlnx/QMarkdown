@@ -214,10 +214,21 @@ body {
 
 @media print {
 	body > div:not(.preview-mode), 
-	body > div.preview-mode > div:not(.preview) {
+	body > div.preview-mode > div:not(.main) {
 		display: none !important;
 	}
+	body > div.preview-mode > .main > div:not(.qmarkdown-view) {
+		display: none !important;
+	}
+	body > div.preview-mode > .main > .qmarkdown-view > div:not(.preview) {
+		display: none !important;
+	}
+	.qmarkdown-view {
+		width: auto !important;
+	}
 	#mdpreview {
+		display: block !important;
+		border-width: 0 !important;
 		height: auto !important;
 		background-color: #ffffff !important;
 		width:inherit !important;
@@ -236,6 +247,7 @@ body {
 	}
 	html, body {
 		height: inherit !important;
+		background-color: #ffffff !important;
 		width: inherit !important;
 		min-width: 0 !important;
 		min-height: 0 !important;

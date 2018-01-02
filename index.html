@@ -34,6 +34,7 @@
 </head>
 
 <body>
+  <div class="cover" style="background-color:rgb(243, 242, 238);position:absolute;width:100%;height:100%;z-index:999999"></div>
   <div id="perm" style="width:100cm; height:0; float: left"></div>
   <div class="row-fluid preview-mode active">
     <div class="main">
@@ -42,7 +43,7 @@
         </div>
       </div>
       <div class="span9 qmarkdown-view">
-        <div class="span6" style="height: 100%">
+        <div class="span6 qmrkdown-editor" style="height: 100%">
           <textarea id="mdinput" class="text mousetrap"></textarea>
         </div>
         <!-- <div class="Qmarkdown-editor"> -->
@@ -58,57 +59,58 @@
         </div>
       </div>
     </div>
-    <div class="side-bar">
-      <div class="back-arrow">
-        <dd></dd><dd></dd><dd></dd><dd onclick="sideBar.toggle()"></dd>
+  </div>
+  <div class="side-bar">
+    <div class="back-arrow">
+      <dd></dd><dd></dd><dd></dd><dd onclick="sideBar.toggle()"></dd>
+    </div>
+    <div class="input-group col-center-block">
+      <div class="option">
+        <span class="title">Top: </span>
+        <input type="number" id="page-margin-top" step="0.01" value="2.54" placeholder="2.54" />
+        <span>cm</span>
       </div>
-      <div class="input-group col-center-block">
-        <div class="option">
-          <span class="title">Top: </span>
-          <input type="number" id="page-margin-top" step="0.01" value="2.54" placeholder="2.54" />
-          <span>cm</span>
-        </div>
-        <div class="option">
-          <span class="title">Bottom: </span>
-          <input type="number" id="page-margin-bottom" step="0.01" value="2.54" placeholder="2.54" />
-          <span>cm</span>
-        </div>
-        <div class="option">
-          <span class="title">Left: </span>
-          <input type="number" id="page-margin-left" step="0.01" value="1.91" placeholder="1.91" />
-          <span>cm</span>
-        </div>
-        <div class="option">
-          <span class="title">Right: </span>
-          <input type="number" id="page-margin-right" step="0.01" value="1.91" placeholder="1.91" />
-          <span>cm</span>
-        </div>
+      <div class="option">
+        <span class="title">Bottom: </span>
+        <input type="number" id="page-margin-bottom" step="0.01" value="2.54" placeholder="2.54" />
+        <span>cm</span>
+      </div>
+      <div class="option">
+        <span class="title">Left: </span>
+        <input type="number" id="page-margin-left" step="0.01" value="1.91" placeholder="1.91" />
+        <span>cm</span>
+      </div>
+      <div class="option">
+        <span class="title">Right: </span>
+        <input type="number" id="page-margin-right" step="0.01" value="1.91" placeholder="1.91" />
+        <span>cm</span>
       </div>
     </div>
-    <div class="scripts">
-      <script src="./src/js/jquery.min.js"></script>
-      
-      <script class="native" src="./src/js/highlight.js"></script>
-      <script class="native" src="./src/js/languages.js"></script>
-      <script class="native" src="./src/js/codemirror.js"></script>
+  </div>
+  <div class="scripts">
+    <script src="./src/js/jquery.min.js"></script>
+    
+    <script class="native" src="./src/js/highlight.js"></script>
+    <script class="native" src="./src/js/languages.js"></script>
+    <script class="native" src="./src/js/codemirror.js"></script>
 
-      <script class="native" src="./src/js/CodeMirror/active-line.js"></script>
-      <script class="native" src="./src/js/CodeMirror/search.js"></script>
-      <script class="native" src="./src/js/CodeMirror/searchcursor.js"></script>
-      <script class="native" src="./src/js/CodeMirror/dialog.js"></script>
-      <script class="native" src="./src/js/CodeMirror/jump-to-line.js"></script>
-      <script class="native" src="./src/js/CodeMirror/matchesonscrollbar.js"></script>
-      <script class="native" src="./src/js/CodeMirror/annotatescrollbar.js"></script>
-      <script class="native" src="./src/js/CodeMirror/foldgutter.js"></script>
-      <script class="native" src="./src/js/CodeMirror/foldcode.js"></script>
-      <script class="native" src="./src/js/CodeMirror/markdown-fold.js"></script>
-      <script class="native" src="./src/js/CodeMirror/markdown.js"></script>
+    <script class="native" src="./src/js/CodeMirror/active-line.js"></script>
+    <script class="native" src="./src/js/CodeMirror/search.js"></script>
+    <script class="native" src="./src/js/CodeMirror/searchcursor.js"></script>
+    <script class="native" src="./src/js/CodeMirror/dialog.js"></script>
+    <script class="native" src="./src/js/CodeMirror/jump-to-line.js"></script>
+    <script class="native" src="./src/js/CodeMirror/matchesonscrollbar.js"></script>
+    <script class="native" src="./src/js/CodeMirror/annotatescrollbar.js"></script>
+    <script class="native" src="./src/js/CodeMirror/foldgutter.js"></script>
+    <script class="native" src="./src/js/CodeMirror/foldcode.js"></script>
+    <script class="native" src="./src/js/CodeMirror/markdown-fold.js"></script>
+    <script class="native" src="./src/js/CodeMirror/markdown.js"></script>
 
-      <script class="native" src="./src/js/katex.js"></script>
-      <script class="native" src="./src/js/katex.auto-render.js"></script>
-      <script class="native" src="./src/js/markdown.js"></script>
-      <script class="native" src="./src/js/main.js"></script>
-    </div>
+    <script class="native" src="./src/js/katex.js"></script>
+    <script class="native" src="./src/js/katex.auto-render.js"></script>
+    <script class="native" src="./src/js/markdown.js"></script>
+    <script class="native" src="./src/js/main.js"></script>
+    <script class="native" src="./src/js/event-listeners.js"></script>
   </div>
 </body>
 

@@ -268,6 +268,13 @@ body {
 		height: auto !important;
 		width: auto !important;
 	}
+	#mdpreview .page .frame 
+	.marked-elem-hover {
+		background-color: inherit !important;
+	}
+	div.page {
+		/* border-width: 0px; */
+	}
 }
 
 .main #outline {

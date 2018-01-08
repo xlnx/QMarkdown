@@ -979,6 +979,13 @@
 			+ (escaped ? code : escape(code, true))
 			+ '\n</code></pre>';
 		}
+
+		if (lang == "mermaid") {
+			return '<div class="mermaid" data-start="'
+			+ start + '" data-end="' + end + '">'
+			+ (escaped ? code : escape(code, true))
+			+ '\n</div>';
+		}
 	
 		return '<pre class="marked-elem" data-start="' 
 		+ start + '" data-end="' + end + '"><code class="multi-line '
@@ -990,11 +997,13 @@
 	};
 
 	Renderer.prototype.qtagbegin = function(classes, start, end) {
-		return '<!--qtag-begin|' + classes + '-->';
+		// return '<!--qtag-begin|' + classes + '-->';
+		return '<div class="marked-elem ' + classes + '" data-start="' + start + '" data-end="' + end + '">';
 	}
 
 	Renderer.prototype.qtagend = function(start, end) {
-		return '<!--qtag-end-->';
+		// return '<!--qtag-end-->';
+		return '</div>';
 	}
 
 	//katex
@@ -1019,12 +1028,14 @@
 	
 	//qtagbegin
 	Renderer.prototype.qtagbegin = function(classes, start, end) {
-		return '<!--qtag-begin|' + classes + '-->';
+		// return '<!--qtag-begin|' + classes + '-->';
+		return '<div class="marked-elem ' + classes + '" data-start="' + start + '" data-end="' + end + '">';
 	}
 
 	//qtagend
 	Renderer.prototype.qtagend = function(start, end) {
-		return '<!--qtag-end-->';
+		// return '<!--qtag-end-->';
+		return '</div>';
 	}
 
 	Renderer.prototype.html = function(html, start, end) {

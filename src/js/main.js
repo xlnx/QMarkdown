@@ -1,3 +1,5 @@
+mermaid.initialize({ theme: 'forest' }); let u = 0;
+
 const editor = CodeMirror.fromTextArea($("#mdinput").get(0), {
 	lineNumbers: true,
 	lineWrapping: true,
@@ -246,7 +248,7 @@ let renderer = {
 				// })
 			})
 		})
-		$('#mdpreview .frame pre code.multi-line:not(.qmarkdown-cache').each(function(i, block) {
+		$('#mdpreview .frame pre code.multi-line:not(.qmarkdown-cache)').each(function(i, block) {
 			self.renderers.push(function (){
 				hljs.highlightBlock(block, true);
 				$(block).removeClass("qmarkdown-rendering");
@@ -257,7 +259,7 @@ let renderer = {
 				// })
 			})
 		})
-		$('#mdpreview .frame code:not(.multi-line):not(.qmarkdown-cache').each(function(i, block) {
+		$('#mdpreview .frame code:not(.multi-line):not(.qmarkdown-cache)').each(function(i, block) {
 			self.renderers.push(function (){
 				hljs.highlightBlock(block, false);
 				$(block).removeClass("qmarkdown-rendering");
@@ -268,29 +270,38 @@ let renderer = {
 				// })
 			})
 		})
+		$('#mdpreview .frame div.mermaid:not(.qmarkdown-cache)').each(function(i, block) {
+			self.renderers.push(function (){
+				mermaid.init('mermaidChart' + u++, block);
+				$(block).removeClass("qmarkdown-rendering");
+				self.cache("mermaid", i, block);
+			})
+		})
 	},
 	preloadHtml: function (html) {
 		let self = this;
 		function modClass(x) {
-			x = x.split(/(<!--qtag-begin\|(?:(?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->|<!--qtag-end-->)/g);
-			var l = [x[0]], br = [], cr;
-			for (let i = 1; i < x.length; i += 2) {
-				let cap;
-				if (cap = /^<!--qtag-begin\|((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->/.exec(x[i])) {
-					br.push(cap[1]);
-					l.push(x[i + 1]);
-				} else {
-					if (l.length == 1) {
-						l[l.length - 1] += x[i + 1];
-					} else {
-						let y = $('<div></div>');
-						y.html(l.pop());
-						y.children().addClass(br.pop());
-						l[l.length - 1] += y.html() + x[i + 1];
-					}
-				}
-			}
-			return $(l[0]);
+			// x = x.split(/(<!--qtag-begin\|(?:(?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->|<!--qtag-end-->)/g);
+			// var l = [x[0]], br = [], cr;
+			// for (let i = 1; i < x.length; i += 2) {
+			// 	let cap;
+			// 	if (cap = /^<!--qtag-begin\|((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->/.exec(x[i])) {
+			// 		br.push(cap[1]);
+			// 		l.push(x[i + 1]);
+			// 	} else {
+			// 		if (l.length == 1) {
+			// 			l[l.length - 1] += x[i + 1];
+			// 		} else {
+			// 			let y = $('<div></div>');
+			// 			y.html(l.pop());
+			// 			y.children().addClass(br.pop());
+			// 			l[l.length - 1] += y.html() + x[i + 1];
+			// 		}
+			// 	}
+			// }
+			// return $(l[0]);
+			// x = x.replace(/<!--qtag-begin\|((?:(?:[^-]|-(?=-->))|-[^-]|--[^>])*)-->/g, '<div class="$1">').replace(/<!--qtag-end-->/g, '</div>');
+			return $(x);
 		}
 		let dom = modClass(html);
 		dom.find('.frame .katex-block:not(.qmarkdown-cache)').each(function(i, block) {
@@ -326,6 +337,19 @@ let renderer = {
 		})
 		dom.find('.frame code:not(.multi-line):not(.qmarkdown-cache)').each(function(i, block) {
 			let obj = self.readCache("codespan", i);
+			if (obj) {
+				$(obj).addClass("qmarkdown-cache");
+				$(block).addClass("qmarkdown-rendering");
+				$(block).after(obj);
+				// $(obj).prependTo(block)
+			}
+			// let size = self.readCache("code", i);
+			// if (size) {
+			// 	block.setAttribute('style', 'width:' + size.width + 'px;height:' + size.height + 'px;display:block;overflow:hidden')
+			// }
+		})
+		dom.find('.frame div.mermaid:not(.qmarkdown-cache)').each(function(i, block) {
+			let obj = self.readCache("mermaid", i);
 			if (obj) {
 				$(obj).addClass("qmarkdown-cache");
 				$(block).addClass("qmarkdown-rendering");

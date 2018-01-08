@@ -398,6 +398,7 @@ function doInitMenu () {
   configure.bind("&View.&Outline", "view.outline")
   configure.bind("&View.&Immersion", "view.immersion")
   configure.bind("&View.Show &Preview", "view.preview")
+  configure.bind("&Paper.&Auto Height", "paper.auto-height")
   configure.init()
   try {
     configure.load(JSON.parse(fs.readFileSync("./configure.json")))
@@ -535,8 +536,20 @@ ipcMain.on('exportPDF', function (event, options, dir) {
   })
 })
 
+let windowParams = {
+  width: 800,
+  height: 600
+}
+
 function createWindow () {
-  mainWindow = new BrowserWindow({width: 800, height: 600})
+  configure = new Config(template)
+  configure.load(JSON.parse(fs.readFileSync("./configure.json")))
+  // let opacity = configure.get("view.opacity")
+  // if (opacity < 1) {
+    // windowParams.transparent = true;
+  // }
+
+  mainWindow = new BrowserWindow(windowParams)
 
   initMenu();
 

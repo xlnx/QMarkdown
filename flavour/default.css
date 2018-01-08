@@ -1,5 +1,5 @@
 div.page {
-	font-family: "Times New Roman", "宋体";
+	font-family: "Times New Roman";
 }
 
 .center {
@@ -46,4 +46,39 @@ p.brand, p.brand-small {
 
 .bold {
 	font-weight: bold;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  /*text-align:center;*/
+}
+
+body {
+  font-size: 16px;
+}
+
+.page:nth-of-type(1) h1,
+.page:nth-of-type(1) h2,
+.page:nth-of-type(1) h3,
+.page:nth-of-type(1) h4,
+.page:nth-of-type(1) h5,
+.page:nth-of-type(1) h6 {
+  text-align: center;
+  margin: 60px;
+}
+
+.page {
+  color: #000;
+}
+
+blockquote {
+  -webkit-margin-start: 10px;
+  -webkit-margin-end: 30px;
+  font-size: 14px;
+}
+
+.page table, tr, thead, td, th {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding-left: 20px;
+  padding-right: 10px;
 }

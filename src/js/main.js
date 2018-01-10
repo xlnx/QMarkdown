@@ -481,7 +481,7 @@ let sideBar = {
 			this.dom.style.left = "0";
 			$(this.dom).focus();
 		} else {
-			this.dom.style.left = "-" + this.width;
+			this.dom.style.left = "-310px";
 			editor.focus();
 		}
 	}

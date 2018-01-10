@@ -21,7 +21,7 @@
 		blockquote: /^( *>[^\n]+(\n(?!def)[^\n]+)*\n*)+/,
 		list: /^( *)(bull) [\s\S]+?(?:hr|def|\n{2,}(?! )(?!\1bull )\n*|\s*$)/,
 		// html: /^ *(?:comment *(?:\n|\s*$)|closed *(?:\n{2,}|\s*$)|closing *(?:\n{1,}|\s*$))/,
-		html: /^ *(?:comment *(?:\n|\s*$)|closed *(?:\n{2,}|\s*$)|closing *(?:\n{2,}|\s*$))/,
+		html: /^ *(?:comment *(?:\n|\s*$)|closed *(?:\n+|\s*$)|closing *(?:\n+|\s*$))/,
 		def: /^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +["(]([^\n]+)[")])? *(?:\n+|$)/,
 		table: noop,
 		paragraph: /^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def|qtagbegin|qtagend))+)\n*/,
@@ -624,9 +624,9 @@
 		del: noop,
 		text: /^[\s\S]+?(?=\$\$|\}|[\\<!\[_*`]| {2,}\n|$)/,
 		//qtagbegin
-		qtagbegin: /^\s*\[(inside)\]\s*\{/, 
+		qtagbegin: /^\s*\[(inside)\]\s*\{\s*\n{0,1}/, 
 		//qtagend
-		qtagend: /^\s*\}/, 
+		qtagend: /^\s*\}\s*/, 
 	};
 	
 	inline._inside = /(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;

@@ -10,7 +10,6 @@ body {
 	margin: 0;
 	font-family: Helvetica, Arial, "Hiragino Sans GB", sans-serif;
 	font-size: 14px;
-	line-height: 20px;
 	color: #555555;
 	background-color: #f3f2ee /*white*/
 }
@@ -210,6 +209,14 @@ body {
 
 .cm-comment {
 	font-family: 'Fira Code';
+}
+
+div.page * {
+	line-height: 1.5em;
+}
+
+body {
+	overflow: hidden;
 }
 
 @media print {
